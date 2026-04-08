@@ -114,22 +114,6 @@ export class WaveformCanvas {
     return this.computeY(wf, x);
   }
 
-  computeLinearY(wf: WaveformConfig, x: number): number {
-    const idx = WAVEFORMS.indexOf(wf);
-    const sigPerturb = this.signalPerturbations[idx] ?? 0;
-
-    const housing =
-      Math.sin(1.0 * x + this.time) +
-      this.perturbation * Math.sin(0.3 * x + this.time * 0.5);
-
-    if (wf.freq === 1.0 && wf.color === "#3266ad") {
-      return housing * AMPLITUDE * (1 + sigPerturb);
-    }
-
-    // Linear prediction: just the base sinusoid, no coupling term
-    return Math.sin(wf.freq * x + this.time) * AMPLITUDE * (1 + sigPerturb);
-  }
-
   private draw(): void {
     const w = this.canvas.clientWidth;
     const h = CSS_HEIGHT;
@@ -327,6 +311,29 @@ export class CombinedCanvas {
     const combinedScale = 0.25;
     const linearColor = "#D85A30";
 
+    // Pre-compute actual combined values for the full x range
+    const actualValues: number[] = [];
+    for (let i = 0; i <= steps; i++) {
+      const x = (i / steps) * X_MAX;
+      let sum = 0;
+      for (const wf of WAVEFORMS) {
+        sum += this.source.computeYForWaveform(wf, x) * combinedScale;
+      }
+      actualValues.push(sum);
+    }
+
+    // Linear model: exponential moving average of the actual signal.
+    // A linear model fitted to recent history produces a smoothed,
+    // lagged estimate — always slightly behind, and it misses sharp
+    // non-linear spikes entirely.
+    const alpha = 0.04; // smoothing factor — lower = more lag
+    const linearValues: number[] = [];
+    let ema = actualValues[0] ?? 0;
+    for (let i = 0; i <= steps; i++) {
+      ema = alpha * (actualValues[i] ?? 0) + (1 - alpha) * ema;
+      linearValues.push(ema);
+    }
+
     // --- Linear prediction (drawn first, behind actual) ---
     this.ctx.save();
     this.ctx.setLineDash([8, 5]);
@@ -335,12 +342,7 @@ export class CombinedCanvas {
     this.ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
       const px = (i / steps) * w;
-      const x = (i / steps) * X_MAX;
-      let linearSum = 0;
-      for (const wf of WAVEFORMS) {
-        linearSum += this.source.computeLinearY(wf, x) * combinedScale;
-      }
-      const y = cy - linearSum;
+      const y = cy - (linearValues[i] ?? 0);
       if (i === 0) this.ctx.moveTo(px, y);
       else this.ctx.lineTo(px, y);
     }
@@ -353,12 +355,7 @@ export class CombinedCanvas {
     this.ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
       const px = (i / steps) * w;
-      const x = (i / steps) * X_MAX;
-      let sum = 0;
-      for (const wf of WAVEFORMS) {
-        sum += this.source.computeYForWaveform(wf, x) * combinedScale;
-      }
-      const y = cy - sum;
+      const y = cy - (actualValues[i] ?? 0);
       if (i === 0) this.ctx.moveTo(px, y);
       else this.ctx.lineTo(px, y);
     }
@@ -375,12 +372,7 @@ export class CombinedCanvas {
     this.ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
       const px = (i / steps) * w;
-      const x = (i / steps) * X_MAX;
-      let sum = 0;
-      for (const wf of WAVEFORMS) {
-        sum += this.source.computeYForWaveform(wf, x) * combinedScale;
-      }
-      const y = cy - sum;
+      const y = cy - (actualValues[i] ?? 0);
       if (i === 0) this.ctx.moveTo(px, y);
       else this.ctx.lineTo(px, y);
     }
