@@ -4,6 +4,27 @@ function p(text: string): HTMLParagraphElement {
   return el;
 }
 
+function figure(src: string, alt: string, caption: string): HTMLElement {
+  const fig = document.createElement("figure");
+  fig.style.cssText =
+    "margin:var(--spacing-lg) 0;border:1px solid var(--color-border);" +
+    "border-radius:var(--radius);overflow:hidden";
+
+  const img = document.createElement("img");
+  img.src = src;
+  img.alt = alt;
+  img.style.cssText = "width:100%;display:block";
+
+  const cap = document.createElement("figcaption");
+  cap.textContent = caption;
+  cap.style.cssText =
+    "font-size:0.8125rem;color:var(--color-text-secondary);" +
+    "padding:var(--spacing-sm) var(--spacing-md);background:var(--color-card)";
+
+  fig.append(img, cap);
+  return fig;
+}
+
 function sectionTitle(text: string): HTMLHeadingElement {
   const h2 = document.createElement("h2");
   h2.className = "section-title";
@@ -83,6 +104,15 @@ export function createNonlinearContent(): HTMLElement {
         "to a sudden stimulus that propagates non-linearly through " +
         "the system.",
     ),
+    figure(
+      "/nonlinear-dynamics.jpg",
+      "Diagram comparing linear regime (independent superposition, " +
+        "predictable sum) with non-linear regime (coupled interactions " +
+        "producing constructive amplification or destructive collapse)",
+      "Linear regime: waveforms combine predictably via superposition. " +
+        "Non-linear regime: coupling between signals produces " +
+        "amplification or collapse depending on phase relationships.",
+    ),
   );
 
   // --- Where Non-Linearity Matters ---
@@ -131,6 +161,17 @@ export function createNonlinearContent(): HTMLElement {
         "[4, 5]. Finance is one application domain among many, but it " +
         "illustrates the stakes: models that fail to capture " +
         "non-linear coupling fail precisely when accuracy matters most.",
+    ),
+    figure(
+      "/nonlinear-market-dynamics-2.jpeg",
+      "Two-panel diagram showing normal market conditions with " +
+        "linear predictability versus stressed coupling with " +
+        "non-linear amplification, collapse, and cross-sector contagion",
+      "Normal markets (top): signals combine linearly with " +
+        "predictable outcomes. Stressed coupling (bottom): a small " +
+        "housing phase shift triggers constructive and destructive " +
+        "interference across credit, equities, and the combined " +
+        "portfolio \u2014 producing linear model failure.",
     ),
   );
 
