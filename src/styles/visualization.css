@@ -1,0 +1,100 @@
+.viz-container {
+  width: 100%;
+  margin: var(--spacing-lg) 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.viz-container canvas {
+  display: block;
+  width: 100%;
+  height: 300px;
+}
+
+.viz-container svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.viz-aria-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* SVG network graph styles */
+.network-graph .ring-guide {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 0.5;
+}
+
+.network-graph .ring-guide-outer {
+  stroke-dasharray: 4 4;
+}
+
+.network-graph .graph-edge {
+  stroke: var(--color-border);
+  stroke-width: 0.8;
+  transition: stroke 0.4s, stroke-width 0.4s, opacity 0.4s;
+}
+
+.network-graph .graph-edge.lit {
+  stroke: var(--color-coral);
+  stroke-width: 2;
+}
+
+.network-graph .graph-edge.dim {
+  opacity: 0.15;
+}
+
+.network-graph .graph-node rect,
+.network-graph .graph-node circle {
+  transition: stroke 0.4s, stroke-width 0.4s, fill 0.4s;
+  stroke-width: 1.5;
+}
+
+.network-graph .graph-node.lit rect,
+.network-graph .graph-node.lit circle {
+  stroke: var(--color-coral);
+  stroke-width: 2.5;
+}
+
+.network-graph .graph-node.source circle {
+  fill: var(--color-coral);
+}
+
+.network-graph .graph-label {
+  font-family: var(--font-body);
+  font-size: 11px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--color-text);
+  pointer-events: none;
+}
+
+.network-graph .hop-label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  fill: var(--color-text-secondary);
+  text-anchor: middle;
+}
+
+.network-graph .annotation {
+  font-family: var(--font-body);
+  font-size: 11px;
+  fill: var(--color-text-secondary);
+  text-anchor: middle;
+  font-style: italic;
+}
+
+@media (max-width: 480px) {
+  .viz-container canvas {
+    height: 240px;
+  }
+}

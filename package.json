@@ -1,0 +1,14 @@
+{
+  "name": "learn-quip-network",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bunx --bun vite",
+    "build": "bunx --bun vite build",
+    "preview": "bunx --bun vite preview"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3",
+    "vite": "6.3.2"
+  }
+}
