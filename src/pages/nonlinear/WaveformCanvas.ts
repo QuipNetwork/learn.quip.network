@@ -28,6 +28,7 @@ export class WaveformCanvas {
   private time: number = 0;
   private coupling: number = 0;
   private perturbation: number = 0;
+  private signalPerturbations: number[] = [0, 0, 0, 0];
   private dpr: number;
   private resizeObserver: ResizeObserver;
   private combinedCanvas: CombinedCanvas | null = null;
@@ -91,6 +92,12 @@ export class WaveformCanvas {
     this.perturbation = v;
   }
 
+  setSignalPerturbation(index: number, v: number): void {
+    if (index >= 0 && index < this.signalPerturbations.length) {
+      this.signalPerturbations[index] = v;
+    }
+  }
+
   getTime(): number {
     return this.time;
   }
@@ -105,6 +112,22 @@ export class WaveformCanvas {
 
   computeYForWaveform(wf: WaveformConfig, x: number): number {
     return this.computeY(wf, x);
+  }
+
+  computeLinearY(wf: WaveformConfig, x: number): number {
+    const idx = WAVEFORMS.indexOf(wf);
+    const sigPerturb = this.signalPerturbations[idx] ?? 0;
+
+    const housing =
+      Math.sin(1.0 * x + this.time) +
+      this.perturbation * Math.sin(0.3 * x + this.time * 0.5);
+
+    if (wf.freq === 1.0 && wf.color === "#3266ad") {
+      return housing * AMPLITUDE * (1 + sigPerturb);
+    }
+
+    // Linear prediction: just the base sinusoid, no coupling term
+    return Math.sin(wf.freq * x + this.time) * AMPLITUDE * (1 + sigPerturb);
   }
 
   private draw(): void {
@@ -198,12 +221,15 @@ export class WaveformCanvas {
   }
 
   private computeY(wf: WaveformConfig, x: number): number {
+    const idx = WAVEFORMS.indexOf(wf);
+    const sigPerturb = this.signalPerturbations[idx] ?? 0;
+
     const housing =
       Math.sin(1.0 * x + this.time) +
       this.perturbation * Math.sin(0.3 * x + this.time * 0.5);
 
     if (wf.freq === 1.0 && wf.color === "#3266ad") {
-      return housing * AMPLITUDE;
+      return housing * AMPLITUDE * (1 + sigPerturb);
     }
 
     const base = Math.sin(wf.freq * x + this.time);
@@ -213,7 +239,7 @@ export class WaveformCanvas {
       housing *
       wf.gain *
       Math.sin(wf.freq * x);
-    return (base + coupled) * AMPLITUDE;
+    return (base + coupled) * AMPLITUDE * (1 + sigPerturb);
   }
 }
 
@@ -320,7 +346,28 @@ export class CombinedCanvas {
       this.ctx.restore();
     }
 
-    // Draw combined sum — filled area + stroke
+    // Linear prediction line (coupling=0 sum, dashed gray)
+    this.ctx.save();
+    this.ctx.setLineDash([6, 4]);
+    this.ctx.strokeStyle = "#999";
+    this.ctx.lineWidth = 1.5;
+    this.ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const px = (i / steps) * w;
+      const x = (i / steps) * X_MAX;
+      let linearSum = 0;
+      for (const wf of WAVEFORMS) {
+        linearSum += this.source.computeLinearY(wf, x) * combinedScale;
+      }
+      const y = cy - linearSum;
+      if (i === 0) this.ctx.moveTo(px, y);
+      else this.ctx.lineTo(px, y);
+    }
+    this.ctx.stroke();
+    this.ctx.setLineDash([]);
+    this.ctx.restore();
+
+    // Actual combined sum — filled area + stroke
     this.ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
       const px = (i / steps) * w;
@@ -361,15 +408,31 @@ export class CombinedCanvas {
     this.ctx.lineWidth = 2;
     this.ctx.stroke();
 
-    // Label
-    this.ctx.fillStyle = theme.textSecondary;
+    // Legend at bottom
+    const legendY = plotH + labelH / 2;
     this.ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
-    this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
-    this.ctx.fillText(
-      "Combined waveform (sum of all signals)",
-      w / 2,
-      plotH + labelH / 2,
-    );
+
+    // Actual combined label
+    const leftX = w / 2 - 100;
+    this.ctx.fillStyle = theme.text;
+    this.ctx.fillRect(leftX - 20, legendY - 1.5, 14, 3);
+    this.ctx.textAlign = "left";
+    this.ctx.fillText("Actual (non-linear)", leftX, legendY);
+
+    // Linear prediction label
+    const rightX = w / 2 + 50;
+    this.ctx.save();
+    this.ctx.setLineDash([4, 3]);
+    this.ctx.strokeStyle = "#999";
+    this.ctx.lineWidth = 1.5;
+    this.ctx.beginPath();
+    this.ctx.moveTo(rightX - 20, legendY);
+    this.ctx.lineTo(rightX - 6, legendY);
+    this.ctx.stroke();
+    this.ctx.setLineDash([]);
+    this.ctx.restore();
+    this.ctx.fillStyle = theme.textSecondary;
+    this.ctx.fillText("Linear prediction", rightX, legendY);
   }
 }
