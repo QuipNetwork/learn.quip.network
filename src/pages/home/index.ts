@@ -45,8 +45,9 @@ export function mountHome(container: HTMLElement): void {
       color: "var(--color-primary)",
       title: "Non-Linear Relationships",
       desc:
-        "Why linear models fail during crises, and how coupled " +
-        "non-linear signals cascade through financial systems.",
+        "Why linear models break down in coupled systems \u2014 from " +
+        "climate tipping points to financial crises \u2014 and how " +
+        "quantum systems model them.",
     },
     {
       href: "/hidden-correlations",

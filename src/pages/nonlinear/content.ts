@@ -24,33 +24,36 @@ export function createNonlinearContent(): HTMLElement {
   // --- Title & subtitle ---
   const title = document.createElement("h1");
   title.className = "page-title";
-  title.textContent = "Non-Linear Relationships in Financial Systems";
+  title.textContent = "Non-Linear Relationships in Complex Systems";
 
   const subtitle = document.createElement("p");
   subtitle.className = "page-subtitle";
   subtitle.textContent =
-    "Why linear models fail during crises, and what quantum systems offer";
+    "Why linear models break down in coupled systems, and what " +
+    "quantum computers offer";
 
   // --- Introduction ---
   const intro = sectionBody(
     p(
-      "A linear relationship means that a change in one variable produces " +
-        "a proportional change in another: double the input, double the " +
-        "output. Linear regression, the most widely used tool in financial " +
-        "modeling, assumes this proportionality holds across all input " +
-        "ranges. Most financial relationships violate this assumption. " +
-        "Interest rate changes affect bond prices non-linearly through " +
-        "convexity. Volatility does not scale linearly with market moves " +
-        "due to the leverage effect. Credit default risk grows non-linearly " +
-        "with exposure concentration through correlation risk. When " +
-        "multiple non-linear variables interact, the combined system " +
-        "diverges sharply from any linear approximation.",
+      "A linear relationship means that a change in one variable " +
+        "produces a proportional change in another: double the input, " +
+        "double the output. Most real-world systems violate this " +
+        "assumption. Weather patterns, biological networks, financial " +
+        "markets, and particle interactions all exhibit non-linear " +
+        "coupling where small perturbations can cascade into dramatic, " +
+        "disproportionate effects. When multiple non-linear variables " +
+        "interact, the combined system diverges sharply from any linear " +
+        "approximation \u2014 and the computational cost of modeling " +
+        "these interactions grows exponentially.",
     ),
     p(
-      "This page illustrates what non-linearity looks like in coupled " +
-        "financial systems, explains why the computational cost of " +
-        "modeling it is exponential, and describes how quantum systems " +
-        "address this through superposition and entanglement.",
+      "This page illustrates what non-linearity looks like in " +
+        "coupled systems, explains why modeling it is computationally " +
+        "intractable for classical hardware, and describes how quantum " +
+        "systems address this through superposition and entanglement. " +
+        "The interactive visualization uses financial signals as a " +
+        "concrete example, but the underlying dynamics apply to any " +
+        "domain with coupled non-linear variables.",
     ),
   );
 
@@ -58,38 +61,76 @@ export function createNonlinearContent(): HTMLElement {
   const whatIsTitle = sectionTitle("What Is a Non-Linear Relationship?");
   const whatIsBody = sectionBody(
     p(
-      "A linear system obeys the superposition principle: the combined " +
-        "effect of two inputs equals the sum of their individual effects. " +
-        "Doubling interest rates would double bond losses; tripling " +
-        "exposure would triple credit risk. No real financial system " +
-        "behaves this way. Bond prices are a convex function of yield: a " +
-        "100-basis-point rate increase causes a larger price drop than a " +
-        "100-basis-point decrease causes a gain. This asymmetry, called " +
-        "convexity, is a non-linear relationship between two variables " +
-        "that linear models systematically misrepresent.",
+      "A function f is linear if f(ax + by) = af(x) + bf(y). Any " +
+        "function that violates this property is non-linear. In a " +
+        "linear system, the combined effect of two inputs equals the " +
+        "sum of their individual effects. In a non-linear system, " +
+        "inputs interact: the effect of A depends on the current state " +
+        "of B. This coupling means the system cannot be decomposed " +
+        "into independent parts and analyzed separately.",
     ),
     p(
-      "The Black-Scholes model prices options using a non-linear payoff " +
-        "function and a log-normal distribution of returns. Even this " +
-        "classic model is an approximation: it assumes constant volatility " +
-        "and continuous trading, both of which break down during crises. " +
-        "Collateralized debt obligations exhibit threshold non-linearity " +
-        "through their tranche structure: senior tranches are insensitive " +
-        "to losses until a critical attachment point, then collapse " +
-        "abruptly. During the 2008 financial crisis, CDO models based on " +
-        "Gaussian copulas failed precisely because they underestimated " +
-        "these non-linear correlations between mortgage defaults.",
+      "The visualization below uses coupled waveforms as an analogy. " +
+        "Each wave represents a variable in a coupled system. When " +
+        "coupling is zero, each wave evolves independently and the " +
+        "system is linear \u2014 the combined result is a predictable " +
+        "superposition. As coupling increases, each wave\u2019s " +
+        "behavior depends on the square of the driving signal, " +
+        "creating feedback loops where small phase shifts produce " +
+        "constructive interference (amplification by orders of " +
+        "magnitude) or destructive interference (amplitude collapse). " +
+        "The perturbation control adds an external shock, analogous " +
+        "to a sudden stimulus that propagates non-linearly through " +
+        "the system.",
+    ),
+  );
+
+  // --- Where Non-Linearity Matters ---
+  const domainsTitle = sectionTitle(
+    "Where Non-Linearity Matters",
+  );
+  const domainsBody = sectionBody(
+    p(
+      "Non-linear dynamics appear across virtually every scientific " +
+        "and engineering domain. In climate science, small changes in " +
+        "atmospheric CO\u2082 concentration trigger non-linear feedback " +
+        "loops: ice-albedo feedback, water vapor amplification, and " +
+        "cloud formation dynamics interact to produce climate " +
+        "sensitivity that cannot be predicted by any linear model. " +
+        "Lorenz\u2019s foundational work on deterministic chaos showed " +
+        "that even simple non-linear atmospheric models exhibit " +
+        "sensitive dependence on initial conditions \u2014 the " +
+        "\u201Cbutterfly effect\u201D [1].",
     ),
     p(
-      "The visualization below uses coupled waveforms as an analogy. Each " +
-        "wave represents a financial variable: housing prices, credit " +
-        "spreads, bank equity values, and consumer confidence. When " +
-        "coupling is zero, each wave evolves independently and the system " +
-        "is approximately linear. As coupling increases, each wave's " +
-        "behavior depends on the square of another wave, creating the " +
-        "kind of non-linear feedback loops that characterize financial " +
-        "crises. The perturbation control adds an external shock, " +
-        "analogous to a sudden policy change or market event.",
+      "In biology, gene regulatory networks are inherently " +
+        "non-linear: transcription factors activate or repress genes " +
+        "in switch-like, sigmoidal patterns that create bistable " +
+        "states, oscillations, and emergent behavior that cannot be " +
+        "captured by linear differential equations [2]. Epidemiological " +
+        "models exhibit non-linear transmission dynamics where the " +
+        "effective reproduction number depends on population immunity, " +
+        "behavioral changes, and network structure simultaneously. " +
+        "Materials science contends with non-linear stress-strain " +
+        "relationships, phase transitions, and turbulence in fluid " +
+        "dynamics \u2014 problems where classical simulation requires " +
+        "exponentially fine discretization to capture the relevant " +
+        "physics [3].",
+    ),
+    p(
+      "In finance, non-linearity manifests through convexity in bond " +
+        "pricing, threshold effects in credit default (CDO tranche " +
+        "structures collapse abruptly past attachment points), " +
+        "volatility smiles that violate Black-Scholes assumptions, " +
+        "and regime-switching dynamics where correlations between " +
+        "assets change discontinuously during crises. During the 2008 " +
+        "financial crisis, the Gaussian copula model used to price " +
+        "CDOs assumed linear correlations between mortgage default " +
+        "rates. When defaults correlated non-linearly across regions, " +
+        "losses cascaded through the entire securitization structure " +
+        "[4, 5]. Finance is one application domain among many, but it " +
+        "illustrates the stakes: models that fail to capture " +
+        "non-linear coupling fail precisely when accuracy matters most.",
     ),
   );
 
@@ -99,59 +140,71 @@ export function createNonlinearContent(): HTMLElement {
   );
   const costBody = sectionBody(
     p(
-      "When N financial variables interact non-linearly, the state space " +
-        "of possible configurations grows as O(2^N) for binary-state " +
-        "models or worse for continuous variables. A portfolio of 50 " +
-        "assets with pairwise non-linear interactions requires evaluating " +
-        "correlations across 2^50 possible portfolio combinations, " +
-        "roughly 10^15 states. Classical Monte Carlo methods sample this " +
-        "space randomly, but convergence slows dramatically when the " +
-        "distribution has fat tails or multimodal structure, exactly the " +
-        "conditions that prevail during financial crises.",
+      "When N variables interact non-linearly, the state space of " +
+        "possible configurations grows as O(2\u207F) for binary-state " +
+        "models or worse for continuous variables. A system of 50 " +
+        "coupled variables with pairwise non-linear interactions " +
+        "requires evaluating correlations across roughly 10\u00B9\u2075 " +
+        "states. Classical Monte Carlo methods sample this space " +
+        "randomly, but convergence slows dramatically when the " +
+        "distribution has fat tails or multimodal structure \u2014 " +
+        "exactly the conditions that prevail in non-linear systems " +
+        "under stress.",
     ),
     p(
-      "Many financial optimization problems with non-linear constraints " +
-        "are NP-hard. Finding the minimum-risk portfolio subject to " +
-        "non-linear transaction costs, cardinality constraints, and " +
-        "regime-dependent correlations has no known polynomial-time " +
-        "algorithm. Classical solvers resort to heuristics that provide " +
-        "no guarantee of finding the global optimum.",
+      "Many optimization problems with non-linear constraints are " +
+        "NP-hard. Or\u00FAs, Mugel, and Lizaso proved that forecasting " +
+        "financial crashes by computing equilibrium states of financial " +
+        "networks is formally NP-hard and mapped it to a spin-1/2 " +
+        "quantum Hamiltonian [6]. This result generalizes: finding " +
+        "equilibria in any network of non-linearly coupled agents " +
+        "shares the same computational structure, whether the agents " +
+        "are financial institutions, neurons, or atmospheric cells.",
     ),
     p(
       "Quantum computers address this through two mechanisms. " +
-        "Superposition allows a quantum register of N qubits to represent " +
-        "all 2^N states simultaneously, enabling parallel evaluation of " +
-        "the entire state space. Entanglement creates correlations " +
-        "between qubits that mirror the non-linear correlations between " +
-        "financial variables, allowing the quantum system to model " +
-        "coupled dynamics natively rather than through exponentially " +
-        "many classical simulations.",
+        "Superposition allows N qubits to represent all 2\u207F states " +
+        "simultaneously, enabling parallel evaluation of the entire " +
+        "interaction space. Entanglement creates correlations between " +
+        "qubits that mirror non-linear coupling between variables, " +
+        "allowing the quantum system to model coupled dynamics " +
+        "natively rather than through exponentially many classical " +
+        "simulations. Algorithms like QAOA and quantum annealing " +
+        "exploit this structure to find good approximate solutions " +
+        "faster than classical heuristics for structured instances " +
+        "[7, 8].",
     ),
   );
 
-  // --- Application to Financial Analysis ---
+  // --- Application Areas ---
   const appTitle = sectionTitle("Application to Financial Analysis");
   const appBody = sectionBody(
     p(
       "Quantum algorithms for financial simulation encode non-linear " +
-        "dynamics into Hamiltonian evolution operators. Quantum amplitude " +
-        "estimation can price path-dependent derivatives with quadratic " +
-        "speedup over classical Monte Carlo, achieving the same accuracy " +
-        "with the square root of the number of samples. For portfolio " +
-        "optimization, variational quantum eigensolvers map the non-linear " +
-        "objective function to a qubit Hamiltonian whose ground state " +
-        "encodes the optimal portfolio allocation.",
+        "dynamics into Hamiltonian evolution operators. Quantum " +
+        "amplitude estimation can price path-dependent derivatives " +
+        "with quadratic speedup over classical Monte Carlo. For " +
+        "portfolio optimization, variational quantum eigensolvers map " +
+        "the non-linear objective function to a qubit Hamiltonian " +
+        "whose ground state encodes the optimal allocation. Takaishi " +
+        "demonstrated that single-qubit quantum circuit learning " +
+        "preserves the negative return\u2013volatility correlation " +
+        "and multifractal structure in GARCH volatility modeling " +
+        "\u2014 features that classical implementations struggle to " +
+        "capture [9].",
     ),
     p(
-      "The practical advantage depends on the regime. For normally " +
-        "distributed returns with linear correlations, classical methods " +
-        "remain efficient. The quantum advantage emerges when the system " +
-        "exhibits strong non-linearity: fat-tailed distributions, " +
-        "regime-switching dynamics, or high-dimensional coupling between " +
-        "variables. These are precisely the conditions where classical " +
-        "risk models have historically failed, suggesting that quantum " +
-        "approaches will provide the greatest value where it is most " +
-        "needed.",
+      "The critical insight is that quantum advantage may be " +
+        "regime-dependent: comparable to classical methods under " +
+        "normal conditions, but superior during crises when " +
+        "non-linear couplings dominate. The interactive visualization " +
+        "above demonstrates this directly: at low coupling, the " +
+        "signals are indistinguishable from a linear model; at high " +
+        "coupling with perturbation, the non-linear cascading effects " +
+        "become dramatic and unpredictable by linear extrapolation. " +
+        "The same principle applies to climate tipping points, " +
+        "epidemic phase transitions, and any system where non-linear " +
+        "coupling activates under stress.",
     ),
   );
 
@@ -165,26 +218,32 @@ export function createNonlinearContent(): HTMLElement {
 
   const ol = document.createElement("ol");
   const refs = [
-    "Rebentrost, P., Gupt, B., & Bromley, T. R. (2018). Quantum " +
-      "computational finance: Monte Carlo pricing of financial " +
-      "derivatives. Physical Review A, 98(2), 022321.",
-    "Orus, R., Mugel, S., & Lizaso, E. (2019). Quantum computing for " +
-      "finance: Overview and prospects. Reviews in Physics, 4, 100028.",
-    "Woerner, S., & Egger, D. J. (2019). Quantum risk analysis. npj " +
-      "Quantum Information, 5(1), 15.",
-    "Stamatopoulos, N., et al. (2020). Option pricing using quantum " +
-      "computers. Quantum, 4, 291.",
-    "Herman, D., et al. (2023). Quantum computing for finance. Nature " +
-      "Reviews Physics, 5, 450-465.",
-    "Egger, D. J., et al. (2020). Quantum computing for finance: " +
-      "State-of-the-art and future prospects. IEEE Transactions on " +
-      "Quantum Engineering, 1, 1-24.",
-    "Chakrabarti, S., et al. (2021). A threshold for quantum advantage " +
-      "in derivative pricing. Quantum, 5, 463.",
-    "An, D., Linden, N., Liu, J.-P., Montanaro, A., Shao, C., & Wang, " +
-      "J. (2021). Quantum-accelerated multilevel Monte Carlo methods for " +
-      "stochastic differential equations in mathematical finance. " +
-      "Quantum, 5, 481.",
+    "Lorenz, E.N. (1963). Deterministic nonperiodic flow. " +
+      "Journal of the Atmospheric Sciences, 20(2), 130\u2013141.",
+    "Alon, U. (2007). An Introduction to Systems Biology: " +
+      "Design Principles of Biological Circuits. Chapman & Hall/CRC.",
+    "Feynman, R. (1982). Simulating physics with computers. " +
+      "International Journal of Theoretical Physics, 21(6/7), " +
+      "467\u2013488.",
+    "Li, D.X. (2000). On Default Correlation: A Copula Function " +
+      "Approach. Journal of Fixed Income, 9(4), 43\u201354.",
+    "Salmon, F. (2009). Recipe for Disaster: The Formula That " +
+      "Killed Wall Street. Wired. " +
+      "https://www.wired.com/2009/02/wp-quant/",
+    "Or\u00FAs, R., Mugel, S., & Lizaso, E. (2019). Forecasting " +
+      "financial crashes with quantum computing. Physical Review A, " +
+      "99, 060301(R). https://arxiv.org/abs/1810.07690",
+    "Farhi, E., Goldstone, J., & Gutmann, S. (2014). A Quantum " +
+      "Approximate Optimization Algorithm. " +
+      "https://arxiv.org/abs/1411.4028",
+    "Kadowaki, T. & Nishimori, H. (1998). Quantum annealing in " +
+      "the transverse Ising model. Physical Review E, 58(5), 5355.",
+    "Takaishi, T. (2025). Volatility time series modeling by " +
+      "single-qubit quantum circuit learning. " +
+      "https://arxiv.org/abs/2512.10584",
+    "Cont, R. & Bouchaud, J.-P. (2000). Herd behavior and " +
+      "aggregate fluctuations in financial markets. Macroeconomic " +
+      "Dynamics, 4(2), 170\u2013196.",
   ];
 
   for (const ref of refs) {
@@ -200,6 +259,8 @@ export function createNonlinearContent(): HTMLElement {
     intro,
     whatIsTitle,
     whatIsBody,
+    domainsTitle,
+    domainsBody,
     costTitle,
     costBody,
     appTitle,
