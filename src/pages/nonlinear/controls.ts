@@ -1,6 +1,12 @@
 import type { WaveformCanvas } from "./WaveformCanvas";
 import { WAVEFORMS } from "./WaveformCanvas";
 
+interface SliderRef {
+  input: HTMLInputElement;
+  display: HTMLSpanElement;
+  format: (v: number) => string;
+}
+
 function createSlider(opts: {
   label: string;
   min: number;
@@ -9,7 +15,7 @@ function createSlider(opts: {
   color?: string;
   formatValue: (v: number) => string;
   onChange: (v: number) => void;
-}): HTMLDivElement {
+}): { el: HTMLDivElement; ref: SliderRef } {
   const group = document.createElement("div");
   group.className = "control-group";
 
@@ -44,7 +50,16 @@ function createSlider(opts: {
   });
 
   group.append(labelEl, input, valueDisplay);
-  return group;
+  return {
+    el: group,
+    ref: { input, display: valueDisplay, format: opts.formatValue },
+  };
+}
+
+function setSlider(ref: SliderRef, value: number): void {
+  ref.input.value = String(value);
+  ref.display.textContent = ref.format(value);
+  ref.input.dispatchEvent(new Event("input"));
 }
 
 function formatPercent(v: number): string {
@@ -56,14 +71,104 @@ function formatSignedPercent(v: number): string {
   return v + "%";
 }
 
+interface Scenario {
+  label: string;
+  coupling: number;
+  perturbation: number;
+  signals: number[];
+}
+
+const SCENARIOS: Scenario[] = [
+  {
+    label: "Normal conditions",
+    coupling: 0,
+    perturbation: 0,
+    signals: [0, 0, 0, 0],
+  },
+  {
+    label: "2008 crisis",
+    coupling: 85,
+    perturbation: -40,
+    signals: [-30, 0, -50, -20],
+  },
+  {
+    label: "Housing shock",
+    coupling: 60,
+    perturbation: -35,
+    signals: [-60, 0, 0, 0],
+  },
+  {
+    label: "Credit contagion",
+    coupling: 75,
+    perturbation: -15,
+    signals: [0, 50, -40, -30],
+  },
+  {
+    label: "Stimulus response",
+    coupling: 45,
+    perturbation: 40,
+    signals: [30, 0, 20, 40],
+  },
+];
+
 export function createControls(canvas: WaveformCanvas): HTMLElement {
   const wrapper = document.createElement("div");
+
+  // Scenario buttons
+  const scenarioRow = document.createElement("div");
+  scenarioRow.className = "viz-controls";
+  scenarioRow.style.borderBottomLeftRadius = "0";
+  scenarioRow.style.borderBottomRightRadius = "0";
+  scenarioRow.style.marginBottom = "0";
+  scenarioRow.style.gap = "var(--spacing-sm)";
+
+  const scenarioLabel = document.createElement("span");
+  scenarioLabel.style.fontSize = "0.75rem";
+  scenarioLabel.style.fontWeight = "600";
+  scenarioLabel.style.color = "var(--color-text-secondary)";
+  scenarioLabel.style.textTransform = "uppercase";
+  scenarioLabel.style.letterSpacing = "0.05em";
+  scenarioLabel.style.whiteSpace = "nowrap";
+  scenarioLabel.textContent = "Scenarios";
+  scenarioRow.append(scenarioLabel);
+
+  // Collect slider refs so scenarios can set them
+  const sliderRefs: {
+    coupling?: SliderRef;
+    perturbation?: SliderRef;
+    signals: SliderRef[];
+  } = { signals: [] };
+
+  function applyScenario(s: Scenario): void {
+    if (sliderRefs.coupling) setSlider(sliderRefs.coupling, s.coupling);
+    if (sliderRefs.perturbation) {
+      setSlider(sliderRefs.perturbation, s.perturbation);
+    }
+    for (let i = 0; i < s.signals.length; i++) {
+      const ref = sliderRefs.signals[i];
+      if (ref) setSlider(ref, s.signals[i] ?? 0);
+    }
+  }
+
+  for (const scenario of SCENARIOS) {
+    const btn = document.createElement("button");
+    btn.className = "btn btn-secondary";
+    btn.style.fontSize = "0.75rem";
+    btn.style.padding = "4px 10px";
+    btn.textContent = scenario.label;
+    btn.addEventListener("click", () => applyScenario(scenario));
+    scenarioRow.append(btn);
+  }
 
   // Global controls
   const globalRow = document.createElement("div");
   globalRow.className = "viz-controls";
+  globalRow.style.borderRadius = "0";
+  globalRow.style.marginTop = "0";
+  globalRow.style.marginBottom = "0";
+  globalRow.style.borderTop = "1px solid var(--color-border)";
 
-  const couplingSlider = createSlider({
+  const coupling = createSlider({
     label: "Coupling strength",
     min: 0,
     max: 100,
@@ -71,8 +176,9 @@ export function createControls(canvas: WaveformCanvas): HTMLElement {
     formatValue: formatPercent,
     onChange: (v) => canvas.setCoupling(v / 100),
   });
+  sliderRefs.coupling = coupling.ref;
 
-  const perturbSlider = createSlider({
+  const perturb = createSlider({
     label: "Global perturbation",
     min: -50,
     max: 50,
@@ -80,8 +186,9 @@ export function createControls(canvas: WaveformCanvas): HTMLElement {
     formatValue: formatSignedPercent,
     onChange: (v) => canvas.setPerturbation(v / 100),
   });
+  sliderRefs.perturbation = perturb.ref;
 
-  globalRow.append(couplingSlider, perturbSlider);
+  globalRow.append(coupling.el, perturb.el);
 
   // Per-signal controls
   const signalRow = document.createElement("div");
@@ -90,11 +197,6 @@ export function createControls(canvas: WaveformCanvas): HTMLElement {
   signalRow.style.borderTop = "1px solid var(--color-border)";
   signalRow.style.borderTopLeftRadius = "0";
   signalRow.style.borderTopRightRadius = "0";
-
-  // Remove bottom radius from global row to merge visually
-  globalRow.style.borderBottomLeftRadius = "0";
-  globalRow.style.borderBottomRightRadius = "0";
-  globalRow.style.marginBottom = "0";
 
   for (let i = 0; i < WAVEFORMS.length; i++) {
     const wf = WAVEFORMS[i]!;
@@ -107,10 +209,11 @@ export function createControls(canvas: WaveformCanvas): HTMLElement {
       formatValue: formatSignedPercent,
       onChange: (v) => canvas.setSignalPerturbation(i, v / 100),
     });
-    slider.style.minWidth = "140px";
-    signalRow.append(slider);
+    slider.el.style.minWidth = "140px";
+    sliderRefs.signals.push(slider.ref);
+    signalRow.append(slider.el);
   }
 
-  wrapper.append(globalRow, signalRow);
+  wrapper.append(scenarioRow, globalRow, signalRow);
   return wrapper;
 }

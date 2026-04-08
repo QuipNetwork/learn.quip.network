@@ -322,16 +322,31 @@ export class CombinedCanvas {
       actualValues.push(sum);
     }
 
-    // Linear model: exponential moving average of the actual signal.
-    // A linear model fitted to recent history produces a smoothed,
-    // lagged estimate — always slightly behind, and it misses sharp
-    // non-linear spikes entirely.
-    const alpha = 0.04; // smoothing factor — lower = more lag
+    // Linear model: sliding-window OLS linear regression.
+    // At each point, fit y = mx + b to the previous `win` samples
+    // and extrapolate forward by 1 step. This is the most common
+    // linear prediction method — it captures trend but cannot track
+    // non-linear oscillations or sudden amplitude changes.
+    const win = 60;
     const linearValues: number[] = [];
-    let ema = actualValues[0] ?? 0;
     for (let i = 0; i <= steps; i++) {
-      ema = alpha * (actualValues[i] ?? 0) + (1 - alpha) * ema;
-      linearValues.push(ema);
+      if (i < win) {
+        linearValues.push(actualValues[i] ?? 0);
+        continue;
+      }
+      // OLS: fit line to points [i-win, i-1], predict at i
+      let sx = 0, sy = 0, sxx = 0, sxy = 0;
+      for (let j = 0; j < win; j++) {
+        const yj = actualValues[i - win + j] ?? 0;
+        sx += j;
+        sy += yj;
+        sxx += j * j;
+        sxy += j * yj;
+      }
+      const denom = win * sxx - sx * sx;
+      const m = denom !== 0 ? (win * sxy - sx * sy) / denom : 0;
+      const b = (sy - m * sx) / win;
+      linearValues.push(m * win + b); // extrapolate 1 step past window
     }
 
     // --- Linear prediction (drawn first, behind actual) ---
