@@ -322,35 +322,16 @@ export class CombinedCanvas {
     this.ctx.stroke();
     this.ctx.restore();
 
-    // Compute combined waveform + individual contributions for fill
     const steps = Math.max(w, 200);
     const cy = plotH / 2;
     const combinedScale = 0.25;
+    const linearColor = "#D85A30";
 
-    // Draw faint individual waveforms
-    for (const wf of WAVEFORMS) {
-      this.ctx.save();
-      this.ctx.globalAlpha = 0.2;
-      this.ctx.strokeStyle = wf.color;
-      this.ctx.lineWidth = 1;
-      this.ctx.beginPath();
-      for (let i = 0; i <= steps; i++) {
-        const px = (i / steps) * w;
-        const x = (i / steps) * X_MAX;
-        const val = this.source.computeYForWaveform(wf, x) * combinedScale;
-        const y = cy - val;
-        if (i === 0) this.ctx.moveTo(px, y);
-        else this.ctx.lineTo(px, y);
-      }
-      this.ctx.stroke();
-      this.ctx.restore();
-    }
-
-    // Linear prediction line (coupling=0 sum, dashed gray)
+    // --- Linear prediction (drawn first, behind actual) ---
     this.ctx.save();
-    this.ctx.setLineDash([6, 4]);
-    this.ctx.strokeStyle = "#999";
-    this.ctx.lineWidth = 1.5;
+    this.ctx.setLineDash([8, 5]);
+    this.ctx.strokeStyle = linearColor;
+    this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
       const px = (i / steps) * w;
@@ -367,7 +348,8 @@ export class CombinedCanvas {
     this.ctx.setLineDash([]);
     this.ctx.restore();
 
-    // Actual combined sum — filled area + stroke
+    // --- Actual combined waveform ---
+    // Fill area between actual and zero
     this.ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
       const px = (i / steps) * w;
@@ -380,18 +362,16 @@ export class CombinedCanvas {
       if (i === 0) this.ctx.moveTo(px, y);
       else this.ctx.lineTo(px, y);
     }
-
-    // Fill under the combined line
     this.ctx.save();
     this.ctx.lineTo(w, cy);
     this.ctx.lineTo(0, cy);
     this.ctx.closePath();
-    this.ctx.globalAlpha = 0.08;
-    this.ctx.fillStyle = theme.text;
+    this.ctx.globalAlpha = 0.1;
+    this.ctx.fillStyle = "#3266ad";
     this.ctx.fill();
     this.ctx.restore();
 
-    // Stroke the combined line
+    // Stroke the actual combined line
     this.ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
       const px = (i / steps) * w;
@@ -404,35 +384,36 @@ export class CombinedCanvas {
       if (i === 0) this.ctx.moveTo(px, y);
       else this.ctx.lineTo(px, y);
     }
-    this.ctx.strokeStyle = theme.text;
-    this.ctx.lineWidth = 2;
+    this.ctx.strokeStyle = "#3266ad";
+    this.ctx.lineWidth = 2.5;
     this.ctx.stroke();
 
-    // Legend at bottom
+    // --- Legend ---
     const legendY = plotH + labelH / 2;
     this.ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
     this.ctx.textBaseline = "middle";
-
-    // Actual combined label
-    const leftX = w / 2 - 100;
-    this.ctx.fillStyle = theme.text;
-    this.ctx.fillRect(leftX - 20, legendY - 1.5, 14, 3);
     this.ctx.textAlign = "left";
+
+    // Actual combined swatch + label
+    const leftX = w / 2 - 120;
+    this.ctx.fillStyle = "#3266ad";
+    this.ctx.fillRect(leftX - 20, legendY - 1.5, 14, 3);
+    this.ctx.fillStyle = theme.text;
     this.ctx.fillText("Actual (non-linear)", leftX, legendY);
 
-    // Linear prediction label
-    const rightX = w / 2 + 50;
+    // Linear prediction swatch + label
+    const rightX = w / 2 + 40;
     this.ctx.save();
-    this.ctx.setLineDash([4, 3]);
-    this.ctx.strokeStyle = "#999";
-    this.ctx.lineWidth = 1.5;
+    this.ctx.setLineDash([5, 3]);
+    this.ctx.strokeStyle = linearColor;
+    this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.moveTo(rightX - 20, legendY);
-    this.ctx.lineTo(rightX - 6, legendY);
+    this.ctx.lineTo(rightX - 4, legendY);
     this.ctx.stroke();
     this.ctx.setLineDash([]);
     this.ctx.restore();
-    this.ctx.fillStyle = theme.textSecondary;
+    this.ctx.fillStyle = theme.text;
     this.ctx.fillText("Linear prediction", rightX, legendY);
   }
 }
