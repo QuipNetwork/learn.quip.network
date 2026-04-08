@@ -86,28 +86,22 @@ const SCENARIOS: Scenario[] = [
     signals: [0, 0, 0, 0],
   },
   {
-    label: "2008 crisis",
-    coupling: 85,
+    label: "Amplification",
+    coupling: 70,
+    perturbation: 35,
+    signals: [30, 0, 20, 0],
+  },
+  {
+    label: "Destruction",
+    coupling: 80,
     perturbation: -40,
-    signals: [-30, 0, -50, -20],
+    signals: [-40, 0, -50, -20],
   },
   {
-    label: "Housing shock",
-    coupling: 60,
-    perturbation: -35,
-    signals: [-60, 0, 0, 0],
-  },
-  {
-    label: "Credit contagion",
-    coupling: 75,
-    perturbation: -15,
-    signals: [0, 50, -40, -30],
-  },
-  {
-    label: "Stimulus response",
-    coupling: 45,
-    perturbation: 40,
-    signals: [30, 0, 20, 40],
+    label: "Volatility",
+    coupling: 90,
+    perturbation: -30,
+    signals: [50, -30, -60, 40],
   },
 ];
 

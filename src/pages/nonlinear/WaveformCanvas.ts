@@ -31,7 +31,7 @@ export class WaveformCanvas {
   private signalPerturbations: number[] = [0, 0, 0, 0];
   private dpr: number;
   private resizeObserver: ResizeObserver;
-  private combinedCanvas: CombinedCanvas | null = null;
+  private gridCanvas: SignalGridCanvas | null = null;
 
   constructor(container: HTMLElement) {
     this.dpr = window.devicePixelRatio || 1;
@@ -58,8 +58,8 @@ export class WaveformCanvas {
     this.syncSize();
   }
 
-  setCombinedCanvas(combined: CombinedCanvas): void {
-    this.combinedCanvas = combined;
+  setGridCanvas(grid: SignalGridCanvas): void {
+    this.gridCanvas = grid;
   }
 
   private syncSize(): void {
@@ -98,18 +98,6 @@ export class WaveformCanvas {
     }
   }
 
-  getTime(): number {
-    return this.time;
-  }
-
-  getCoupling(): number {
-    return this.coupling;
-  }
-
-  getPerturbation(): number {
-    return this.perturbation;
-  }
-
   computeYForWaveform(wf: WaveformConfig, x: number): number {
     return this.computeY(wf, x);
   }
@@ -120,7 +108,6 @@ export class WaveformCanvas {
     const theme = getThemeColors();
     const plotH = h - LEGEND_HEIGHT;
 
-    // Clear & fill background
     this.ctx.clearRect(0, 0, w, h);
     this.ctx.fillStyle = theme.bg;
     this.ctx.fillRect(0, 0, w, h);
@@ -160,23 +147,17 @@ export class WaveformCanvas {
         const px = (i / steps) * w;
         const x = (i / steps) * X_MAX;
         const y = cy - this.computeY(wf, x);
-
-        if (i === 0) {
-          this.ctx.moveTo(px, y);
-        } else {
-          this.ctx.lineTo(px, y);
-        }
+        if (i === 0) this.ctx.moveTo(px, y);
+        else this.ctx.lineTo(px, y);
       }
 
       this.ctx.stroke();
     }
 
-    // Legend at bottom
     this.drawLegend(w, plotH, theme.text);
 
-    // Update combined canvas
-    if (this.combinedCanvas) {
-      this.combinedCanvas.draw();
+    if (this.gridCanvas) {
+      this.gridCanvas.draw();
     }
   }
 
@@ -191,13 +172,11 @@ export class WaveformCanvas {
       const wf = WAVEFORMS[i]!;
       const baseX = spacing * i + spacing / 2;
 
-      // Color swatch
       const swatchW = 16;
       const swatchH = 3;
       this.ctx.fillStyle = wf.color;
       this.ctx.fillRect(baseX - 44, y - swatchH / 2, swatchW, swatchH);
 
-      // Label
       this.ctx.fillStyle = textColor;
       this.ctx.textAlign = "left";
       this.ctx.fillText(wf.label, baseX - 24, y);
@@ -227,9 +206,37 @@ export class WaveformCanvas {
   }
 }
 
-const COMBINED_HEIGHT = 200;
+// --- 2x2 grid: each signal with its OLS linear prediction ---
 
-export class CombinedCanvas {
+const GRID_HEIGHT = 400;
+const CELL_PAD = 8;
+const LABEL_H = 20;
+const OLS_WIN = 60;
+
+function olsPredict(values: number[], win: number): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < values.length; i++) {
+    if (i < win) {
+      out.push(values[i] ?? 0);
+      continue;
+    }
+    let sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (let j = 0; j < win; j++) {
+      const yj = values[i - win + j] ?? 0;
+      sx += j;
+      sy += yj;
+      sxx += j * j;
+      sxy += j * yj;
+    }
+    const denom = win * sxx - sx * sx;
+    const m = denom !== 0 ? (win * sxy - sx * sy) / denom : 0;
+    const b = (sy - m * sx) / win;
+    out.push(m * win + b);
+  }
+  return out;
+}
+
+export class SignalGridCanvas {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private dpr: number;
@@ -242,12 +249,12 @@ export class CombinedCanvas {
 
     this.canvas = document.createElement("canvas");
     this.canvas.style.width = "100%";
-    this.canvas.style.height = COMBINED_HEIGHT + "px";
+    this.canvas.style.height = GRID_HEIGHT + "px";
     this.canvas.style.display = "block";
     this.canvas.setAttribute("role", "img");
     this.canvas.setAttribute(
       "aria-label",
-      "Combined waveform showing the sum of all four financial signals",
+      "2x2 grid showing each signal with its linear regression prediction",
     );
     container.append(this.canvas);
 
@@ -269,158 +276,154 @@ export class CombinedCanvas {
   private syncSize(): void {
     const cssWidth = this.canvas.clientWidth;
     this.canvas.width = cssWidth * this.dpr;
-    this.canvas.height = COMBINED_HEIGHT * this.dpr;
+    this.canvas.height = GRID_HEIGHT * this.dpr;
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.scale(this.dpr, this.dpr);
   }
 
   draw(): void {
     const w = this.canvas.clientWidth;
-    const h = COMBINED_HEIGHT;
+    const h = GRID_HEIGHT;
     const theme = getThemeColors();
-    const labelH = 24;
-    const plotH = h - labelH;
 
     this.ctx.clearRect(0, 0, w, h);
     this.ctx.fillStyle = theme.bg;
     this.ctx.fillRect(0, 0, w, h);
 
-    // Gridlines
+    const cols = 2;
+    const rows = 2;
+    const cellW = (w - CELL_PAD) / cols;
+    const cellH = (h - CELL_PAD) / rows;
+
+    for (let idx = 0; idx < WAVEFORMS.length; idx++) {
+      const wf = WAVEFORMS[idx]!;
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      const ox = col * (cellW + CELL_PAD);
+      const oy = row * (cellH + CELL_PAD);
+
+      this.drawCell(ox, oy, cellW, cellH, wf, theme);
+    }
+
+    // Divider lines
     this.ctx.strokeStyle = theme.grid;
     this.ctx.lineWidth = 1;
-    for (let i = 1; i <= 3; i++) {
-      const y = (plotH / 4) * i;
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, y);
-      this.ctx.lineTo(w, y);
-      this.ctx.stroke();
-    }
+
+    // Horizontal divider
+    this.ctx.beginPath();
+    this.ctx.moveTo(0, Math.floor(h / 2));
+    this.ctx.lineTo(w, Math.floor(h / 2));
+    this.ctx.stroke();
+
+    // Vertical divider
+    this.ctx.beginPath();
+    this.ctx.moveTo(Math.floor(w / 2), 0);
+    this.ctx.lineTo(Math.floor(w / 2), h);
+    this.ctx.stroke();
+  }
+
+  private drawCell(
+    ox: number,
+    oy: number,
+    cw: number,
+    ch: number,
+    wf: WaveformConfig,
+    theme: { bg: string; grid: string; zero: string; text: string; textSecondary: string },
+  ): void {
+    const plotH = ch - LABEL_H;
+    const cy = oy + plotH / 2;
+    const steps = Math.max(Math.floor(cw), 100);
+    const amp = plotH * 0.4;
 
     // Zero line
     this.ctx.save();
-    this.ctx.globalAlpha = 0.5;
+    this.ctx.globalAlpha = 0.3;
     this.ctx.strokeStyle = theme.zero;
+    this.ctx.lineWidth = 1;
     this.ctx.beginPath();
-    this.ctx.moveTo(0, plotH / 2);
-    this.ctx.lineTo(w, plotH / 2);
+    this.ctx.moveTo(ox, cy);
+    this.ctx.lineTo(ox + cw, cy);
     this.ctx.stroke();
     this.ctx.restore();
 
-    const steps = Math.max(w, 200);
-    const cy = plotH / 2;
-    const combinedScale = 0.25;
-    const linearColor = "#D85A30";
-
-    // Pre-compute actual combined values for the full x range
-    const actualValues: number[] = [];
+    // Compute actual values
+    const actual: number[] = [];
     for (let i = 0; i <= steps; i++) {
       const x = (i / steps) * X_MAX;
-      let sum = 0;
-      for (const wf of WAVEFORMS) {
-        sum += this.source.computeYForWaveform(wf, x) * combinedScale;
-      }
-      actualValues.push(sum);
+      actual.push(this.source.computeYForWaveform(wf, x) / AMPLITUDE * amp);
     }
 
-    // Linear model: sliding-window OLS linear regression.
-    // At each point, fit y = mx + b to the previous `win` samples
-    // and extrapolate forward by 1 step. This is the most common
-    // linear prediction method — it captures trend but cannot track
-    // non-linear oscillations or sudden amplitude changes.
-    const win = 60;
-    const linearValues: number[] = [];
-    for (let i = 0; i <= steps; i++) {
-      if (i < win) {
-        linearValues.push(actualValues[i] ?? 0);
-        continue;
-      }
-      // OLS: fit line to points [i-win, i-1], predict at i
-      let sx = 0, sy = 0, sxx = 0, sxy = 0;
-      for (let j = 0; j < win; j++) {
-        const yj = actualValues[i - win + j] ?? 0;
-        sx += j;
-        sy += yj;
-        sxx += j * j;
-        sxy += j * yj;
-      }
-      const denom = win * sxx - sx * sx;
-      const m = denom !== 0 ? (win * sxy - sx * sy) / denom : 0;
-      const b = (sy - m * sx) / win;
-      linearValues.push(m * win + b); // extrapolate 1 step past window
-    }
+    // OLS linear prediction
+    const predicted = olsPredict(actual, OLS_WIN);
 
-    // --- Linear prediction (drawn first, behind actual) ---
+    // Draw linear prediction (dashed, behind)
     this.ctx.save();
-    this.ctx.setLineDash([8, 5]);
-    this.ctx.strokeStyle = linearColor;
-    this.ctx.lineWidth = 2;
+    this.ctx.setLineDash([6, 4]);
+    this.ctx.strokeStyle = theme.textSecondary;
+    this.ctx.lineWidth = 1.5;
     this.ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
-      const px = (i / steps) * w;
-      const y = cy - (linearValues[i] ?? 0);
-      if (i === 0) this.ctx.moveTo(px, y);
-      else this.ctx.lineTo(px, y);
+      const px = ox + (i / steps) * cw;
+      const py = cy - (predicted[i] ?? 0);
+      if (i === 0) this.ctx.moveTo(px, py);
+      else this.ctx.lineTo(px, py);
     }
     this.ctx.stroke();
     this.ctx.setLineDash([]);
     this.ctx.restore();
 
-    // --- Actual combined waveform ---
-    // Fill area between actual and zero
+    // Draw actual signal (solid, on top)
+    this.ctx.strokeStyle = wf.color;
+    this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
-      const px = (i / steps) * w;
-      const y = cy - (actualValues[i] ?? 0);
-      if (i === 0) this.ctx.moveTo(px, y);
-      else this.ctx.lineTo(px, y);
+      const px = ox + (i / steps) * cw;
+      const py = cy - (actual[i] ?? 0);
+      if (i === 0) this.ctx.moveTo(px, py);
+      else this.ctx.lineTo(px, py);
     }
-    this.ctx.save();
-    this.ctx.lineTo(w, cy);
-    this.ctx.lineTo(0, cy);
-    this.ctx.closePath();
-    this.ctx.globalAlpha = 0.1;
-    this.ctx.fillStyle = "#3266ad";
-    this.ctx.fill();
-    this.ctx.restore();
-
-    // Stroke the actual combined line
-    this.ctx.beginPath();
-    for (let i = 0; i <= steps; i++) {
-      const px = (i / steps) * w;
-      const y = cy - (actualValues[i] ?? 0);
-      if (i === 0) this.ctx.moveTo(px, y);
-      else this.ctx.lineTo(px, y);
-    }
-    this.ctx.strokeStyle = "#3266ad";
-    this.ctx.lineWidth = 2.5;
     this.ctx.stroke();
 
-    // --- Legend ---
-    const legendY = plotH + labelH / 2;
-    this.ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
-    this.ctx.textBaseline = "middle";
+    // Label
+    this.ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, sans-serif";
     this.ctx.textAlign = "left";
+    this.ctx.textBaseline = "middle";
 
-    // Actual combined swatch + label
-    const leftX = w / 2 - 120;
-    this.ctx.fillStyle = "#3266ad";
-    this.ctx.fillRect(leftX - 20, legendY - 1.5, 14, 3);
-    this.ctx.fillStyle = theme.text;
-    this.ctx.fillText("Actual (non-linear)", leftX, legendY);
-
-    // Linear prediction swatch + label
-    const rightX = w / 2 + 40;
-    this.ctx.save();
-    this.ctx.setLineDash([5, 3]);
-    this.ctx.strokeStyle = linearColor;
-    this.ctx.lineWidth = 2;
+    // Color dot
+    this.ctx.fillStyle = wf.color;
     this.ctx.beginPath();
-    this.ctx.moveTo(rightX - 20, legendY);
-    this.ctx.lineTo(rightX - 4, legendY);
+    this.ctx.arc(ox + 10, oy + plotH + LABEL_H / 2, 4, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Name
+    this.ctx.fillStyle = theme.text;
+    this.ctx.fillText(wf.label, ox + 20, oy + plotH + LABEL_H / 2);
+
+    // Legend items on right side
+    this.ctx.textAlign = "right";
+    const legendX = ox + cw - 8;
+    const legendY = oy + plotH + LABEL_H / 2;
+
+    // "Actual" swatch
+    this.ctx.fillStyle = wf.color;
+    this.ctx.fillRect(legendX - 120, legendY - 1, 12, 2.5);
+    this.ctx.fillStyle = theme.textSecondary;
+    this.ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
+    this.ctx.textAlign = "left";
+    this.ctx.fillText("Actual", legendX - 105, legendY);
+
+    // "Linear" swatch (dashed)
+    this.ctx.save();
+    this.ctx.setLineDash([4, 2]);
+    this.ctx.strokeStyle = theme.textSecondary;
+    this.ctx.lineWidth = 1.5;
+    this.ctx.beginPath();
+    this.ctx.moveTo(legendX - 52, legendY);
+    this.ctx.lineTo(legendX - 40, legendY);
     this.ctx.stroke();
     this.ctx.setLineDash([]);
     this.ctx.restore();
-    this.ctx.fillStyle = theme.text;
-    this.ctx.fillText("Linear prediction", rightX, legendY);
+    this.ctx.fillStyle = theme.textSecondary;
+    this.ctx.fillText("Linear", legendX - 37, legendY);
   }
 }
