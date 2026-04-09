@@ -215,34 +215,32 @@ const LABEL_H = 20;
 // for the sinusoidal fit to resolve the frequency.
 const MIN_CYCLES = 1.5;
 
-// Least-squares sinusoidal fit over a trailing window.
-// Fits y = a*sin(ωt) + b*cos(ωt) + c to the window, then
-// extrapolates forward. This is what a competent linear model
-// does: it captures the dominant frequency perfectly under
-// normal conditions, but fails when non-linear coupling
-// introduces harmonics and amplitude modulation.
+// Least-squares sinusoidal fit using a centered window.
+// Fits y = a*sin(ωt) + b*cos(ωt) + c to nearby samples,
+// producing predictions from the very first point.
 function sinusoidalPredict(
   values: number[],
   win: number,
   freq: number,
   xPerStep: number,
 ): number[] {
+  const n = values.length;
+  const half = Math.floor(win / 2);
   const out: number[] = [];
-  for (let i = 0; i < values.length; i++) {
-    if (i < win) {
-      out.push(values[i] ?? 0);
-      continue;
-    }
-    // Fit y = a*sin(ωx) + b*cos(ωx) + c over [i-win, i-1]
-    // using normal equations (3x3 linear system)
+  for (let i = 0; i < n; i++) {
+    // Centered window: clamp to array bounds
+    const lo = Math.max(0, i - half);
+    const hi = Math.min(n - 1, i + half);
+    const count = hi - lo + 1;
+
     let ss = 0, sc = 0, s1 = 0;
     let sss = 0, ssc = 0, scc = 0;
     let sy = 0, sys = 0, syc = 0;
-    for (let j = 0; j < win; j++) {
-      const x = (i - win + j) * xPerStep;
+    for (let j = lo; j <= hi; j++) {
+      const x = j * xPerStep;
       const sv = Math.sin(freq * x);
       const cv = Math.cos(freq * x);
-      const yj = values[i - win + j] ?? 0;
+      const yj = values[j] ?? 0;
       ss += sv;
       sc += cv;
       s1 += 1;
@@ -253,8 +251,12 @@ function sinusoidalPredict(
       sys += yj * sv;
       syc += yj * cv;
     }
-    // Solve [sss ssc ss; ssc scc sc; ss sc s1] [a;b;c] = [sys;syc;sy]
-    // Using Cramer's rule for 3x3
+
+    if (count < 3) {
+      out.push(values[i] ?? 0);
+      continue;
+    }
+
     const det =
       sss * (scc * s1 - sc * sc) -
       ssc * (ssc * s1 - sc * ss) +
