@@ -4,6 +4,33 @@ function p(text: string): HTMLParagraphElement {
   return el;
 }
 
+function cite(...nums: number[]): HTMLSpanElement {
+  const span = document.createElement("span");
+  nums.forEach((n, i) => {
+    if (i > 0) span.append(", ");
+    const a = document.createElement("a");
+    a.href = `#ref-${n}`;
+    a.className = "cite-link";
+    a.textContent = `[${n}]`;
+    span.append(a);
+  });
+  return span;
+}
+
+function richP(
+  ...parts: Array<string | HTMLElement>
+): HTMLParagraphElement {
+  const el = document.createElement("p");
+  for (const part of parts) {
+    if (typeof part === "string") {
+      el.append(document.createTextNode(part));
+    } else {
+      el.append(part);
+    }
+  }
+  return el;
+}
+
 function figure(src: string, alt: string, caption: string): HTMLElement {
   const fig = document.createElement("figure");
   fig.style.cssText =
@@ -120,24 +147,28 @@ export function createNonlinearContent(): HTMLElement {
     "Where Non-Linearity Matters",
   );
   const domainsBody = sectionBody(
-    p(
-      "Non-linear dynamics appear across virtually every scientific " +
-        "and engineering domain. In climate science, small changes in " +
+    richP(
+      "Non-linear dynamics appear across many scientific " +
+        "and engineering domains. In climate science, small changes in " +
         "atmospheric CO\u2082 concentration trigger non-linear feedback " +
         "loops: ice-albedo feedback, water vapor amplification, and " +
         "cloud formation dynamics interact to produce climate " +
-        "sensitivity that cannot be predicted by any linear model. " +
+        "sensitivity that no linear model can predict. " +
         "Lorenz\u2019s foundational work on deterministic chaos showed " +
         "that even simple non-linear atmospheric models exhibit " +
         "sensitive dependence on initial conditions \u2014 the " +
-        "\u201Cbutterfly effect\u201D [1].",
+        "\u201Cbutterfly effect\u201D ",
+      cite(1),
+      ".",
     ),
-    p(
+    richP(
       "In biology, gene regulatory networks are inherently " +
         "non-linear: transcription factors activate or repress genes " +
         "in switch-like, sigmoidal patterns that create bistable " +
-        "states, oscillations, and emergent behavior that cannot be " +
-        "captured by linear differential equations [2]. Epidemiological " +
+        "states, oscillations, and emergent behavior that linear " +
+        "differential equations cannot capture ",
+      cite(2),
+      ". Epidemiological " +
         "models exhibit non-linear transmission dynamics where the " +
         "effective reproduction number depends on population immunity, " +
         "behavioral changes, and network structure simultaneously. " +
@@ -145,9 +176,11 @@ export function createNonlinearContent(): HTMLElement {
         "relationships, phase transitions, and turbulence in fluid " +
         "dynamics \u2014 problems where classical simulation requires " +
         "exponentially fine discretization to capture the relevant " +
-        "physics [3].",
+        "physics ",
+      cite(3),
+      ".",
     ),
-    p(
+    richP(
       "In finance, non-linearity manifests through convexity in bond " +
         "pricing, threshold effects in credit default, and regime-" +
         "switching dynamics where correlations between assets change " +
@@ -155,7 +188,9 @@ export function createNonlinearContent(): HTMLElement {
         "crisis, the Gaussian copula model assumed linear correlations " +
         "between mortgage default rates; when defaults correlated " +
         "non-linearly across regions, losses cascaded through the " +
-        "entire securitization structure [4, 5].",
+        "entire securitization structure ",
+      cite(4, 5),
+      ".",
     ),
     p(
       "Across all these domains, the pattern is the same: models " +
@@ -194,17 +229,20 @@ export function createNonlinearContent(): HTMLElement {
         "exactly the conditions that prevail in non-linear systems " +
         "under stress.",
     ),
-    p(
+    richP(
       "Many optimization problems with non-linear constraints are " +
         "NP-hard. Or\u00FAs, Mugel, and Lizaso proved that forecasting " +
         "financial crashes by computing equilibrium states of financial " +
         "networks is formally NP-hard and mapped it to a spin-1/2 " +
-        "quantum Hamiltonian [6]. This result generalizes: finding " +
-        "equilibria in any network of non-linearly coupled agents " +
-        "shares the same computational structure, whether the agents " +
-        "are financial institutions, neurons, or atmospheric cells.",
+        "quantum Hamiltonian ",
+      cite(6),
+      ". This result generalizes: " +
+        "finding equilibria in any network of non-linearly coupled " +
+        "agents shares the same computational structure, whether the " +
+        "agents are financial institutions, neurons, or atmospheric " +
+        "cells.",
     ),
-    p(
+    richP(
       "Quantum computers address this through two mechanisms. " +
         "Superposition allows N qubits to represent all 2\u207F states " +
         "simultaneously, enabling parallel evaluation of the entire " +
@@ -212,10 +250,14 @@ export function createNonlinearContent(): HTMLElement {
         "qubits that mirror non-linear coupling between variables, " +
         "allowing the quantum system to model coupled dynamics " +
         "natively rather than through exponentially many classical " +
-        "simulations. Algorithms like QAOA and quantum annealing " +
-        "exploit this structure to find good approximate solutions " +
-        "faster than classical heuristics for structured instances " +
-        "[7, 8].",
+        "simulations. Farhi et al. ",
+      cite(7),
+      " and Kadowaki and Nishimori ",
+      cite(8),
+      " propose that algorithms like QAOA " +
+        "and quantum annealing exploit this structure to find good " +
+        "approximate solutions faster than classical heuristics for " +
+        "structured instances.",
     ),
   );
 
@@ -274,8 +316,9 @@ export function createNonlinearContent(): HTMLElement {
     },
   ];
 
-  for (const ref of refs) {
+  refs.forEach((ref, i) => {
     const li = document.createElement("li");
+    li.id = `ref-${i + 1}`;
     li.append(document.createTextNode(ref.text + " "));
     if (ref.url) {
       const a = document.createElement("a");
@@ -286,7 +329,7 @@ export function createNonlinearContent(): HTMLElement {
       li.append(a);
     }
     ol.append(li);
-  }
+  });
   citations.append(ol);
 
   root.append(

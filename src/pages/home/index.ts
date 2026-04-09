@@ -23,7 +23,7 @@ export function mountHome(container: HTMLElement): void {
     "indirect correlations that propagate through multi-hop networks, " +
     "and rugged optimization landscapes with exponentially many local " +
     "minima. Each of these properties maps to a capability where " +
-    "quantum systems have a structural advantage over classical " +
+    "quantum systems may hold a structural advantage over classical " +
     "hardware.";
   const p2 = document.createElement("p");
   p2.textContent =
