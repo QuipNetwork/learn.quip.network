@@ -72,7 +72,7 @@ export function createNonlinearContent(): HTMLElement {
         "coupled systems, explains why modeling it is computationally " +
         "intractable for classical hardware, and describes how quantum " +
         "systems address this through superposition and entanglement. " +
-        "The interactive visualization uses financial signals as a " +
+        "The interactive visualization uses coupled waveforms as a " +
         "concrete example, but the underlying dynamics apply to any " +
         "domain with coupled non-linear variables.",
     ),
@@ -149,29 +149,31 @@ export function createNonlinearContent(): HTMLElement {
     ),
     p(
       "In finance, non-linearity manifests through convexity in bond " +
-        "pricing, threshold effects in credit default (CDO tranche " +
-        "structures collapse abruptly past attachment points), " +
-        "volatility smiles that violate Black-Scholes assumptions, " +
-        "and regime-switching dynamics where correlations between " +
-        "assets change discontinuously during crises. During the 2008 " +
-        "financial crisis, the Gaussian copula model used to price " +
-        "CDOs assumed linear correlations between mortgage default " +
-        "rates. When defaults correlated non-linearly across regions, " +
-        "losses cascaded through the entire securitization structure " +
-        "[4, 5]. Finance is one application domain among many, but it " +
-        "illustrates the stakes: models that fail to capture " +
-        "non-linear coupling fail precisely when accuracy matters most.",
+        "pricing, threshold effects in credit default, and regime-" +
+        "switching dynamics where correlations between assets change " +
+        "discontinuously during crises. During the 2008 financial " +
+        "crisis, the Gaussian copula model assumed linear correlations " +
+        "between mortgage default rates; when defaults correlated " +
+        "non-linearly across regions, losses cascaded through the " +
+        "entire securitization structure [4, 5].",
+    ),
+    p(
+      "Across all these domains, the pattern is the same: models " +
+        "that assume linearity fail precisely when accuracy matters " +
+        "most \u2014 during phase transitions, cascading failures, " +
+        "and regime changes.",
     ),
     figure(
       "/nonlinear-market-dynamics-2.jpeg",
-      "Two-panel diagram showing normal market conditions with " +
-        "linear predictability versus stressed coupling with " +
-        "non-linear amplification, collapse, and cross-sector contagion",
-      "Normal markets (top): signals combine linearly with " +
-        "predictable outcomes. Stressed coupling (bottom): a small " +
-        "housing phase shift triggers constructive and destructive " +
-        "interference across credit, equities, and the combined " +
-        "portfolio \u2014 producing linear model failure.",
+      "Two-panel diagram showing normal conditions with linear " +
+        "predictability versus stressed coupling with non-linear " +
+        "amplification, collapse, and cross-sector contagion",
+      "This figure uses financial markets as one illustration of " +
+        "non-linear dynamics. Top: signals combine linearly with " +
+        "predictable outcomes. Bottom: a small perturbation triggers " +
+        "constructive and destructive interference across coupled " +
+        "subsystems \u2014 a pattern common to climate, biological, " +
+        "and financial systems alike.",
     ),
   );
 
@@ -246,6 +248,7 @@ export function createNonlinearContent(): HTMLElement {
     {
       text: "Li, D.X. (2000). On Default Correlation: A Copula " +
         "Function Approach. Journal of Fixed Income, 9(4), 43\u201354.",
+      url: "https://doi.org/10.3905/jfi.2000.319253",
     },
     {
       text: "Salmon, F. (2009). Recipe for Disaster: The Formula " +

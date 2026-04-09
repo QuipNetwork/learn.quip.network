@@ -206,7 +206,7 @@ export function createTunnelingContent(): {
     ),
   );
 
-  // Section 4: Application to Financial Portfolio Optimization
+  // Section 4: Applications Across Industries
   sections.append(
     section("Applications Across Industries", [
       "Any optimization problem formulated as a QUBO or Ising " +

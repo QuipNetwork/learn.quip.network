@@ -4,31 +4,33 @@ export function mountHome(container: HTMLElement): void {
 
   const title = document.createElement("h1");
   title.className = "page-title";
-  title.textContent = "Quantum Computing in Finance";
+  title.textContent = "Quantum Computing for Complex Systems";
 
   const subtitle = document.createElement("p");
   subtitle.className = "page-subtitle";
   subtitle.textContent =
     "Interactive explorations of why quantum computers offer" +
-    " structural advantages for financial modeling";
+    " structural advantages for modeling complex systems";
 
   const intro = document.createElement("div");
   intro.className = "section-body";
   const p1 = document.createElement("p");
   p1.textContent =
-    "Financial systems exhibit three properties that make them " +
-    "fundamentally difficult for classical computers: non-linear " +
-    "coupling between variables, indirect correlations that propagate " +
-    "through multi-hop networks, and rugged optimization landscapes " +
-    "with exponentially many local minima. Each of these properties " +
-    "maps to a capability where quantum systems have a structural " +
-    "advantage over classical hardware.";
+    "Complex systems \u2014 from climate dynamics and biological " +
+    "networks to supply chains and financial markets \u2014 exhibit " +
+    "three properties that make them fundamentally difficult for " +
+    "classical computers: non-linear coupling between variables, " +
+    "indirect correlations that propagate through multi-hop networks, " +
+    "and rugged optimization landscapes with exponentially many local " +
+    "minima. Each of these properties maps to a capability where " +
+    "quantum systems have a structural advantage over classical " +
+    "hardware.";
   const p2 = document.createElement("p");
   p2.textContent =
     "The three interactive explainers below illustrate these " +
     "properties, explain the underlying mathematics, and connect them " +
-    "to peer-reviewed research on quantum approaches to financial " +
-    "computation.";
+    "to peer-reviewed research on quantum approaches to modeling " +
+    "complex systems.";
   intro.append(p1, p2);
 
   const grid = document.createElement("div");
@@ -46,15 +48,15 @@ export function mountHome(container: HTMLElement): void {
       title: "Non-Linear Relationships",
       desc:
         "Why linear models break down in coupled systems \u2014 from " +
-        "climate tipping points to financial crises \u2014 and how " +
-        "quantum systems model them.",
+        "climate tipping points to biological networks to financial " +
+        "crises \u2014 and how quantum systems model them.",
     },
     {
       href: "/hidden-correlations",
       color: "var(--color-teal)",
       title: "Hidden Correlations",
       desc:
-        "How influence propagates through intermediaries in financial " +
+        "How influence propagates through intermediaries in complex " +
         "networks, invisible to pairwise analysis.",
     },
     {
