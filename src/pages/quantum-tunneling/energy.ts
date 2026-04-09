@@ -7,7 +7,9 @@ export function E(x: number): number {
     48 +
     10 * Math.sin((Math.PI / 8) * x - (5 * Math.PI) / 4) +
     4 * Math.sin(0.9 * x + 0.5) +
-    2.5 * Math.cos(1.6 * x)
+    2.5 * Math.cos(1.6 * x) +
+    3 * Math.sin(1.3 * x - 0.7) +
+    1.8 * Math.cos(2.3 * x + 1.2)
   );
 }
 
