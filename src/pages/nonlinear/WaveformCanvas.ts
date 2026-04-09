@@ -211,27 +211,75 @@ export class WaveformCanvas {
 const GRID_HEIGHT = 400;
 const CELL_PAD = 8;
 const LABEL_H = 20;
-const OLS_WIN = 60;
+const PREDICT_WIN = 80;
 
-function olsPredict(values: number[], win: number): number[] {
+// Least-squares sinusoidal fit over a trailing window.
+// Fits y = a*sin(ωt) + b*cos(ωt) + c to the window, then
+// extrapolates forward. This is what a competent linear model
+// does: it captures the dominant frequency perfectly under
+// normal conditions, but fails when non-linear coupling
+// introduces harmonics and amplitude modulation.
+function sinusoidalPredict(
+  values: number[],
+  win: number,
+  freq: number,
+  xPerStep: number,
+): number[] {
   const out: number[] = [];
   for (let i = 0; i < values.length; i++) {
     if (i < win) {
       out.push(values[i] ?? 0);
       continue;
     }
-    let sx = 0, sy = 0, sxx = 0, sxy = 0;
+    // Fit y = a*sin(ωx) + b*cos(ωx) + c over [i-win, i-1]
+    // using normal equations (3x3 linear system)
+    let ss = 0, sc = 0, s1 = 0;
+    let sss = 0, ssc = 0, scc = 0;
+    let sy = 0, sys = 0, syc = 0;
     for (let j = 0; j < win; j++) {
+      const x = (i - win + j) * xPerStep;
+      const sv = Math.sin(freq * x);
+      const cv = Math.cos(freq * x);
       const yj = values[i - win + j] ?? 0;
-      sx += j;
+      ss += sv;
+      sc += cv;
+      s1 += 1;
+      sss += sv * sv;
+      ssc += sv * cv;
+      scc += cv * cv;
       sy += yj;
-      sxx += j * j;
-      sxy += j * yj;
+      sys += yj * sv;
+      syc += yj * cv;
     }
-    const denom = win * sxx - sx * sx;
-    const m = denom !== 0 ? (win * sxy - sx * sy) / denom : 0;
-    const b = (sy - m * sx) / win;
-    out.push(m * win + b);
+    // Solve [sss ssc ss; ssc scc sc; ss sc s1] [a;b;c] = [sys;syc;sy]
+    // Using Cramer's rule for 3x3
+    const det =
+      sss * (scc * s1 - sc * sc) -
+      ssc * (ssc * s1 - sc * ss) +
+      ss * (ssc * sc - scc * ss);
+    if (Math.abs(det) < 1e-10) {
+      out.push(values[i] ?? 0);
+      continue;
+    }
+    const a =
+      (sys * (scc * s1 - sc * sc) -
+        ssc * (syc * s1 - sc * sy) +
+        ss * (syc * sc - scc * sy)) /
+      det;
+    const b =
+      (sss * (syc * s1 - sc * sy) -
+        sys * (ssc * s1 - sc * ss) +
+        ss * (ssc * sy - syc * ss)) /
+      det;
+    const c =
+      (sss * (scc * sy - sc * syc) -
+        ssc * (ssc * sy - sc * sys) +
+        sys * (ssc * sc - scc * ss)) /
+      det;
+
+    // Predict at position i
+    const xPred = i * xPerStep;
+    out.push(a * Math.sin(freq * xPred) + b * Math.cos(freq * xPred) + c);
   }
   return out;
 }
@@ -348,13 +396,16 @@ export class SignalGridCanvas {
 
     // Compute actual values
     const actual: number[] = [];
+    const xPerStep = X_MAX / steps;
     for (let i = 0; i <= steps; i++) {
-      const x = (i / steps) * X_MAX;
+      const x = i * xPerStep;
       actual.push(this.source.computeYForWaveform(wf, x) / AMPLITUDE * amp);
     }
 
-    // OLS linear prediction
-    const predicted = olsPredict(actual, OLS_WIN);
+    // Sinusoidal fit using the signal's base frequency
+    const predicted = sinusoidalPredict(
+      actual, PREDICT_WIN, wf.freq, xPerStep,
+    );
 
     // Draw linear prediction (dashed, behind)
     this.ctx.save();
