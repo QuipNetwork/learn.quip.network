@@ -182,12 +182,23 @@ export class WaveformEngine {
   }
 
   // Coupled signals (Graph 2)
+  // Linear term: additive blending (drives amplification/destruction).
+  // Non-linear term: product of signals (creates harmonics at 2ω
+  // that a single-frequency prediction model cannot capture).
   coupledA(x: number): number {
-    return this.rawA(x) + this.couplingBA * this.rawB(x);
+    const a = this.rawA(x);
+    const b = this.rawB(x);
+    const linear = this.couplingBA * b;
+    const nonlinear = this.couplingBA * a * b / AMPLITUDE * 0.6;
+    return a + linear + nonlinear;
   }
 
   coupledB(x: number): number {
-    return this.rawB(x) + this.couplingAB * this.rawA(x);
+    const a = this.rawA(x);
+    const b = this.rawB(x);
+    const linear = this.couplingAB * a;
+    const nonlinear = this.couplingAB * a * b / AMPLITUDE * 0.6;
+    return b + linear + nonlinear;
   }
 
   // Predictions evaluate at x + current time (since model was
