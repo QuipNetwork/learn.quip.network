@@ -102,6 +102,7 @@ export function createControls(engine: WaveformEngine): HTMLElement {
   const refs: Record<string, SliderRef> = {};
 
   function apply(s: Scenario): void {
+    engine.resetModels();
     if (refs["cab"]) setSlider(refs["cab"], s.couplingAB);
     if (refs["cba"]) setSlider(refs["cba"], s.couplingBA);
     if (refs["gp"]) setSlider(refs["gp"], s.perturbation);

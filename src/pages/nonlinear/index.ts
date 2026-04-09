@@ -53,11 +53,14 @@ export function mountNonlinear(container: HTMLElement): () => void {
     "font-size:0.8125rem;color:var(--color-text-secondary);" +
     "margin-bottom:var(--spacing-sm);line-height:1.5";
   caption.textContent =
-    "Dashed lines show a least-squares sinusoidal fit " +
-    "(y = a\u00B7sin(\u03C9t) + b\u00B7cos(\u03C9t) + c) retrained " +
-    "at the configured interval. Under predictable conditions the " +
-    "model tracks almost perfectly. With coupling, non-linear " +
-    "harmonics appear that a single-frequency model cannot capture.";
+    "Dashed lines show a sinusoidal prediction model trained on " +
+    "sampled data from the live signal. The model collects samples " +
+    "each frame and retrains at the configured interval. Between " +
+    "retrains, it extrapolates from stale coefficients \u2014 the " +
+    "prediction drifts as the actual signal evolves. Under " +
+    "predictable conditions the model converges quickly. With " +
+    "coupling, the signal contains non-linear components that the " +
+    "single-frequency model cannot capture.";
 
   // Graph 3: Aggregate with prediction
   const agg3 = document.createElement("div");

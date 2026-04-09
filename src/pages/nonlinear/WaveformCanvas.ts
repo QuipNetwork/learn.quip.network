@@ -12,19 +12,100 @@ const TIME_STEP = 0.015;
 
 export const SIGNALS = [SIGNAL_A, SIGNAL_B] as const;
 
-// --- Shared state managed by the main canvas ---
+// --- Prediction model ---
+// Trained on historical samples, produces predictions from stale
+// coefficients. Fits y = a*sin(ωx) + b*cos(ωx) + c to past data.
+
+interface FitCoeffs { a: number; b: number; c: number }
+
+class PredictionModel {
+  private history: number[] = [];
+  private xHistory: number[] = [];
+  private coeffs: FitCoeffs = { a: 0, b: 0, c: 0 };
+  private trained = false;
+  private readonly freq: number;
+  private readonly maxSamples = 200;
+
+  constructor(freq: number) {
+    this.freq = freq;
+  }
+
+  // Record a sample from the live signal
+  addSample(x: number, value: number): void {
+    this.history.push(value);
+    this.xHistory.push(x);
+    if (this.history.length > this.maxSamples) {
+      this.history.shift();
+      this.xHistory.shift();
+    }
+  }
+
+  // Retrain the model on accumulated history
+  retrain(): void {
+    const n = this.history.length;
+    if (n < 3) return;
+
+    let sumY = 0;
+    for (let i = 0; i < n; i++) sumY += this.history[i] ?? 0;
+    const c = sumY / n;
+
+    let sinProj = 0, cosProj = 0, sinNorm = 0, cosNorm = 0;
+    for (let i = 0; i < n; i++) {
+      const x = this.xHistory[i] ?? 0;
+      const sv = Math.sin(this.freq * x);
+      const cv = Math.cos(this.freq * x);
+      const r = (this.history[i] ?? 0) - c;
+      sinProj += r * sv;
+      cosProj += r * cv;
+      sinNorm += sv * sv;
+      cosNorm += cv * cv;
+    }
+
+    this.coeffs = {
+      a: sinNorm > 1e-10 ? sinProj / sinNorm : 0,
+      b: cosNorm > 1e-10 ? cosProj / cosNorm : 0,
+      c,
+    };
+    this.trained = true;
+  }
+
+  // Clear history (e.g., on scenario change)
+  reset(): void {
+    this.history = [];
+    this.xHistory = [];
+    this.trained = false;
+    this.coeffs = { a: 0, b: 0, c: 0 };
+  }
+
+  // Predict signal value at position x using stale coefficients
+  predict(x: number): number | null {
+    if (!this.trained) return null;
+    const { a, b, c } = this.coeffs;
+    return a * Math.sin(this.freq * x) + b * Math.cos(this.freq * x) + c;
+  }
+}
+
+// --- Engine: drives signals + predictions ---
+
+const SAMPLE_POINTS = 16; // spatial sample points per training tick
 
 export class WaveformEngine {
   private time = 0;
-  private couplingAB = 0; // A impacts B
-  private couplingBA = 0; // B impacts A
+  private frameCount = 0;
+  private couplingAB = 0;
+  private couplingBA = 0;
   private perturbation = 0;
   private perturbA = 0;
   private perturbB = 0;
-  private phaseB = Math.PI / 2; // default 90°
-  private updateInterval = 15; // default: 1 hour
+  private phaseB = Math.PI / 2;
+  private updateInterval = 15; // frames between retrains
   private animId = 0;
   private panels: Array<{ draw: () => void; stop: () => void }> = [];
+
+  // Prediction models for coupled signals
+  readonly predA = new PredictionModel(SIGNAL_A.freq);
+  readonly predB = new PredictionModel(SIGNAL_B.freq);
+  readonly predAgg = new PredictionModel(SIGNAL_A.freq);
 
   setCouplingAB(v: number): void { this.couplingAB = v; }
   setCouplingBA(v: number): void { this.couplingBA = v; }
@@ -32,8 +113,14 @@ export class WaveformEngine {
   setPerturbA(v: number): void { this.perturbA = v; }
   setPerturbB(v: number): void { this.perturbB = v; }
   setPhaseB(v: number): void { this.phaseB = v; }
-  setUpdateInterval(v: number): void { this.updateInterval = v; }
+  setUpdateInterval(v: number): void { this.updateInterval = Math.max(1, v); }
   getUpdateInterval(): number { return this.updateInterval; }
+
+  resetModels(): void {
+    this.predA.reset();
+    this.predB.reset();
+    this.predAgg.reset();
+  }
 
   addPanel(panel: { draw: () => void; stop: () => void }): void {
     this.panels.push(panel);
@@ -42,6 +129,8 @@ export class WaveformEngine {
   start(): void {
     const frame = (): void => {
       this.time += TIME_STEP;
+      this.frameCount++;
+      this.updatePredictions();
       for (const p of this.panels) p.draw();
       this.animId = requestAnimationFrame(frame);
     };
@@ -53,7 +142,27 @@ export class WaveformEngine {
     for (const p of this.panels) p.stop();
   }
 
-  // Raw uncoupled signals (for Graph 1)
+  private updatePredictions(): void {
+    // Collect samples from the current signal at evenly spaced x positions
+    for (let s = 0; s < SAMPLE_POINTS; s++) {
+      const x = (s / SAMPLE_POINTS) * X_MAX;
+      this.predA.addSample(x + this.time, this.coupledA(x));
+      this.predB.addSample(x + this.time, this.coupledB(x));
+      this.predAgg.addSample(
+        x + this.time,
+        this.coupledA(x) + this.coupledB(x),
+      );
+    }
+
+    // Retrain at the configured interval
+    if (this.frameCount % this.updateInterval === 0) {
+      this.predA.retrain();
+      this.predB.retrain();
+      this.predAgg.retrain();
+    }
+  }
+
+  // Raw uncoupled signals (Graph 1)
   rawA(x: number): number {
     const base = Math.sin(SIGNAL_A.freq * x + this.time);
     const perturb = this.perturbation * (
@@ -72,17 +181,27 @@ export class WaveformEngine {
     return (base + perturb) * AMPLITUDE * (1 + this.perturbB);
   }
 
-  // Coupled signals (for Graph 2)
-  // Add a fraction of the other signal directly.
-  // In-phase (0°): A + coupling*B ≈ A*(1+coupling) — amplified.
-  // Anti-phase (180°): A + coupling*(-A) = A*(1-coupling) — flattens.
-  // At 100% coupling + 180° phase, output is zero.
+  // Coupled signals (Graph 2)
   coupledA(x: number): number {
     return this.rawA(x) + this.couplingBA * this.rawB(x);
   }
 
   coupledB(x: number): number {
     return this.rawB(x) + this.couplingAB * this.rawA(x);
+  }
+
+  // Predictions evaluate at x + current time (since model was
+  // trained with time-shifted x coordinates)
+  predictA(x: number): number | null {
+    return this.predA.predict(x + this.time);
+  }
+
+  predictB(x: number): number | null {
+    return this.predB.predict(x + this.time);
+  }
+
+  predictAgg(x: number): number | null {
+    return this.predAgg.predict(x + this.time);
   }
 }
 
@@ -91,13 +210,17 @@ export class WaveformEngine {
 const CANVAS_H = 260;
 const LEGEND_H = 28;
 const GRID_COUNT = 5;
-const MIN_CYCLES = 1.0;
 
 function setupCanvas(
   container: HTMLElement,
   height: number,
   label: string,
-): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; dpr: number; ro: ResizeObserver } {
+): {
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  dpr: number;
+  ro: ResizeObserver;
+} {
   const dpr = window.devicePixelRatio || 1;
   const canvas = document.createElement("canvas");
   canvas.style.width = "100%";
@@ -159,13 +282,11 @@ function drawLegendTwoSignals(
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
 
-  // Signal A
   ctx.fillStyle = SIGNAL_A.color;
   ctx.fillRect(12, y - 1.5, 14, 3);
   ctx.fillStyle = textColor;
   ctx.fillText(SIGNAL_A.label, 32, y);
 
-  // Signal B
   ctx.fillStyle = SIGNAL_B.color;
   ctx.fillRect(130, y - 1.5, 14, 3);
   ctx.fillStyle = textColor;
@@ -187,113 +308,34 @@ function drawLegendTwoSignals(
   }
 }
 
-// --- Sinusoidal prediction ---
-
-function fitSinusoid(
-  values: number[],
-  lo: number,
-  hi: number,
-  freq: number,
-  xPerStep: number,
-  xOffset: number,
-): { a: number; b: number; c: number } | null {
-  const count = hi - lo + 1;
-  if (count < 3) return null;
-
-  let sumY = 0;
-  for (let j = lo; j <= hi; j++) sumY += values[j] ?? 0;
-  const c = sumY / count;
-
-  let sinProj = 0, cosProj = 0, sinNorm = 0, cosNorm = 0;
-  for (let j = lo; j <= hi; j++) {
-    const x = (j + xOffset) * xPerStep;
-    const sv = Math.sin(freq * x);
-    const cv = Math.cos(freq * x);
-    const r = (values[j] ?? 0) - c;
-    sinProj += r * sv;
-    cosProj += r * cv;
-    sinNorm += sv * sv;
-    cosNorm += cv * cv;
-  }
-
-  return {
-    a: sinNorm > 1e-10 ? sinProj / sinNorm : 0,
-    b: cosNorm > 1e-10 ? cosProj / cosNorm : 0,
-    c,
-  };
-}
-
-function predict(
-  values: number[],
-  win: number,
-  freq: number,
-  xPerStep: number,
-  updateInterval: number,
-  xOffset: number,
-): number[] {
-  const n = values.length;
-  const out: number[] = [];
-  const evalFit = (
-    fit: { a: number; b: number; c: number },
-    i: number,
-  ): number => {
-    const x = (i + xOffset) * xPerStep;
-    return fit.a * Math.sin(freq * x) + fit.b * Math.cos(freq * x) + fit.c;
-  };
-
-  if (updateInterval <= 0) {
-    for (let i = 0; i < n; i++) {
-      const lo = Math.max(0, i - win);
-      const fit = fitSinusoid(values, lo, i, freq, xPerStep, xOffset);
-      out.push(fit ? evalFit(fit, i) : (values[i] ?? 0));
-    }
-    return out;
-  }
-
-  let currentFit: { a: number; b: number; c: number } | null = null;
-  for (let i = 0; i < n; i++) {
-    if (i % updateInterval === 0) {
-      const lo = Math.max(0, i - win);
-      currentFit = fitSinusoid(values, lo, i, freq, xPerStep, xOffset);
-    }
-    out.push(currentFit ? evalFit(currentFit, i) : (values[i] ?? 0));
-  }
-  return out;
-}
-
-function computePrediction(
-  values: number[],
+// Draw a prediction line from engine predict function
+function drawPrediction(
+  ctx: CanvasRenderingContext2D,
+  w: number,
   steps: number,
-  freq: number,
-  xPerStep: number,
-  updateInterval: number,
-): number[] {
-  const wavelengthInSteps = (2 * Math.PI / freq) / xPerStep;
-  const win = Math.min(steps, Math.max(40, Math.ceil(wavelengthInSteps * MIN_CYCLES)));
-  const pad = win;
-
-  // Extend values left for training history
-  // values already includes pad+steps+1 entries with offset -pad
-  const all = predict(values, win, freq, xPerStep, updateInterval, -pad);
-  return all.slice(pad);
-}
-
-// Helper to sample a signal with padding for prediction training
-function sampleWithPad(
-  fn: (x: number) => number,
-  steps: number,
-  xPerStep: number,
-  freq: number,
+  cy: number,
   amp: number,
-): { all: number[]; pad: number; visible: number[] } {
-  const wavelengthInSteps = (2 * Math.PI / freq) / xPerStep;
-  const win = Math.min(steps, Math.max(40, Math.ceil(wavelengthInSteps * MIN_CYCLES)));
-  const pad = win;
-  const all: number[] = [];
-  for (let i = -pad; i <= steps; i++) {
-    all.push(fn(i * xPerStep) / AMPLITUDE * amp);
+  predictFn: (x: number) => number | null,
+  color: string,
+): void {
+  ctx.save();
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  let started = false;
+  for (let i = 0; i <= steps; i++) {
+    const x = (i / steps) * X_MAX;
+    const val = predictFn(x);
+    if (val === null) continue;
+    const px = (i / steps) * w;
+    const py = cy - val / AMPLITUDE * amp;
+    if (!started) { ctx.moveTo(px, py); started = true; }
+    else ctx.lineTo(px, py);
   }
-  return { all, pad, visible: all.slice(pad) };
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
 }
 
 // --- Graph 1: Unmodified Input (no coupling) ---
@@ -301,7 +343,10 @@ function sampleWithPad(
 export class InputCanvas {
   private c;
   constructor(container: HTMLElement, private engine: WaveformEngine) {
-    this.c = setupCanvas(container, CANVAS_H, "Unmodified input signals without coupling");
+    this.c = setupCanvas(
+      container, CANVAS_H,
+      "Unmodified input signals without coupling",
+    );
   }
   stop(): void { this.c.ro.disconnect(); }
   draw(): void {
@@ -312,6 +357,7 @@ export class InputCanvas {
     const plotH = h - LEGEND_H;
     const cy = plotH / 2;
     const steps = Math.max(w, 200);
+    const amp = plotH * 0.4;
 
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = theme.bg;
@@ -325,7 +371,7 @@ export class InputCanvas {
     for (let i = 0; i <= steps; i++) {
       const px = (i / steps) * w;
       const x = (i / steps) * X_MAX;
-      const y = cy - this.engine.rawA(x) / AMPLITUDE * (plotH * 0.4);
+      const y = cy - this.engine.rawA(x) / AMPLITUDE * amp;
       if (i === 0) ctx.moveTo(px, y); else ctx.lineTo(px, y);
     }
     ctx.stroke();
@@ -337,7 +383,7 @@ export class InputCanvas {
     for (let i = 0; i <= steps; i++) {
       const px = (i / steps) * w;
       const x = (i / steps) * X_MAX;
-      const y = cy - this.engine.rawB(x) / AMPLITUDE * (plotH * 0.4);
+      const y = cy - this.engine.rawB(x) / AMPLITUDE * amp;
       if (i === 0) ctx.moveTo(px, y); else ctx.lineTo(px, y);
     }
     ctx.stroke();
@@ -351,7 +397,10 @@ export class InputCanvas {
 export class CoupledCanvas {
   private c;
   constructor(container: HTMLElement, private engine: WaveformEngine) {
-    this.c = setupCanvas(container, CANVAS_H, "Coupled output signals with linear predictions");
+    this.c = setupCanvas(
+      container, CANVAS_H,
+      "Coupled output signals with linear predictions",
+    );
   }
   stop(): void { this.c.ro.disconnect(); }
   draw(): void {
@@ -363,53 +412,45 @@ export class CoupledCanvas {
     const cy = plotH / 2;
     const steps = Math.max(w, 200);
     const amp = plotH * 0.4;
-    const xPerStep = X_MAX / steps;
 
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = theme.bg;
     ctx.fillRect(0, 0, w, h);
     drawGrid(ctx, w, plotH, theme);
 
-    const drawSignal = (
-      fn: (x: number) => number,
-      freq: number,
-      color: string,
-    ): void => {
-      const { all, pad, visible } = sampleWithPad(fn, steps, xPerStep, freq, amp);
+    // Predictions (dashed, behind)
+    drawPrediction(
+      ctx, w, steps, cy, amp,
+      (x) => this.engine.predictA(x), theme.textSecondary,
+    );
+    drawPrediction(
+      ctx, w, steps, cy, amp,
+      (x) => this.engine.predictB(x), theme.textSecondary,
+    );
 
-      // Prediction (dashed, behind)
-      const pred = computePrediction(all, steps, freq, xPerStep, this.engine.getUpdateInterval());
-      ctx.save();
-      ctx.setLineDash([6, 4]);
-      ctx.strokeStyle = theme.textSecondary;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      for (let i = 0; i <= steps; i++) {
-        const px = (i / steps) * w;
-        const py = cy - (pred[i] ?? 0);
-        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
+    // Actual coupled A
+    ctx.strokeStyle = SIGNAL_A.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const px = (i / steps) * w;
+      const x = (i / steps) * X_MAX;
+      const y = cy - this.engine.coupledA(x) / AMPLITUDE * amp;
+      if (i === 0) ctx.moveTo(px, y); else ctx.lineTo(px, y);
+    }
+    ctx.stroke();
 
-      // Actual (solid)
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let i = 0; i <= steps; i++) {
-        const px = (i / steps) * w;
-        const py = cy - (visible[i] ?? 0);
-        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-      }
-      ctx.stroke();
-
-      // Suppress unused var
-      void pad;
-    };
-
-    drawSignal((x) => this.engine.coupledA(x), SIGNAL_A.freq, SIGNAL_A.color);
-    drawSignal((x) => this.engine.coupledB(x), SIGNAL_B.freq, SIGNAL_B.color);
+    // Actual coupled B
+    ctx.strokeStyle = SIGNAL_B.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const px = (i / steps) * w;
+      const x = (i / steps) * X_MAX;
+      const y = cy - this.engine.coupledB(x) / AMPLITUDE * amp;
+      if (i === 0) ctx.moveTo(px, y); else ctx.lineTo(px, y);
+    }
+    ctx.stroke();
 
     drawLegendTwoSignals(ctx, w, plotH, LEGEND_H, theme.text, {
       dashColor: theme.textSecondary,
@@ -426,7 +467,10 @@ const AGG_LEGEND_H = 24;
 export class AggregateCanvas {
   private c;
   constructor(container: HTMLElement, private engine: WaveformEngine) {
-    this.c = setupCanvas(container, AGG_HEIGHT, "Aggregate signal with linear prediction");
+    this.c = setupCanvas(
+      container, AGG_HEIGHT,
+      "Aggregate signal with linear prediction",
+    );
   }
   stop(): void { this.c.ro.disconnect(); }
   draw(): void {
@@ -438,7 +482,6 @@ export class AggregateCanvas {
     const cy = plotH / 2;
     const steps = Math.max(w, 200);
     const amp = plotH * 0.35;
-    const xPerStep = X_MAX / steps;
 
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = theme.bg;
@@ -463,42 +506,19 @@ export class AggregateCanvas {
     ctx.stroke();
     ctx.restore();
 
-    // Sum actual and predicted for both signals
-    const actualSum: number[] = new Array(steps + 1).fill(0);
-    const predSum: number[] = new Array(steps + 1).fill(0);
-
-    const addSignal = (fn: (x: number) => number, freq: number): void => {
-      const { all, visible } = sampleWithPad(fn, steps, xPerStep, freq, amp);
-      const pred = computePrediction(all, steps, freq, xPerStep, this.engine.getUpdateInterval());
-      for (let i = 0; i <= steps; i++) {
-        actualSum[i] = (actualSum[i] ?? 0) + (visible[i] ?? 0);
-        predSum[i] = (predSum[i] ?? 0) + (pred[i] ?? 0);
-      }
-    };
-
-    addSignal((x) => this.engine.coupledA(x), SIGNAL_A.freq);
-    addSignal((x) => this.engine.coupledB(x), SIGNAL_B.freq);
-
     // Prediction (dashed)
-    ctx.save();
-    ctx.setLineDash([8, 5]);
-    ctx.strokeStyle = theme.textSecondary;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i = 0; i <= steps; i++) {
-      const px = (i / steps) * w;
-      const py = cy - (predSum[i] ?? 0);
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
+    drawPrediction(
+      ctx, w, steps, cy, amp,
+      (x) => this.engine.predictAgg(x), theme.textSecondary,
+    );
 
-    // Fill
+    // Actual aggregate fill
     ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
       const px = (i / steps) * w;
-      const py = cy - (actualSum[i] ?? 0);
+      const x = (i / steps) * X_MAX;
+      const val = this.engine.coupledA(x) + this.engine.coupledB(x);
+      const py = cy - val / AMPLITUDE * amp;
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
     ctx.save();
@@ -510,11 +530,13 @@ export class AggregateCanvas {
     ctx.fill();
     ctx.restore();
 
-    // Actual (solid)
+    // Actual aggregate line
     ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
       const px = (i / steps) * w;
-      const py = cy - (actualSum[i] ?? 0);
+      const x = (i / steps) * X_MAX;
+      const val = this.engine.coupledA(x) + this.engine.coupledB(x);
+      const py = cy - val / AMPLITUDE * amp;
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
     ctx.strokeStyle = "#3266ad";
