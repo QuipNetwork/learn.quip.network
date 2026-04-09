@@ -65,28 +65,29 @@ interface Scenario {
   perturbation: number;
   perturbA: number;
   perturbB: number;
+  phaseB: number; // degrees
 }
 
 const SCENARIOS: Scenario[] = [
   {
     label: "Predictable",
     couplingAB: 0, couplingBA: 0,
-    perturbation: 0, perturbA: 0, perturbB: 0,
+    perturbation: 0, perturbA: 0, perturbB: 0, phaseB: 0,
   },
   {
     label: "Amplification",
     couplingAB: 70, couplingBA: 70,
-    perturbation: 30, perturbA: 30, perturbB: 30,
+    perturbation: 20, perturbA: 0, perturbB: 0, phaseB: 0,
   },
   {
     label: "Destruction",
     couplingAB: 75, couplingBA: 75,
-    perturbation: -35, perturbA: -40, perturbB: 40,
+    perturbation: 20, perturbA: 0, perturbB: 0, phaseB: 180,
   },
   {
     label: "Volatility",
     couplingAB: 90, couplingBA: 85,
-    perturbation: -30, perturbA: 50, perturbB: -60,
+    perturbation: -30, perturbA: 50, perturbB: -60, phaseB: 90,
   },
 ];
 
@@ -104,6 +105,7 @@ export function createControls(engine: WaveformEngine): HTMLElement {
     if (refs["cab"]) setSlider(refs["cab"], s.couplingAB);
     if (refs["cba"]) setSlider(refs["cba"], s.couplingBA);
     if (refs["gp"]) setSlider(refs["gp"], s.perturbation);
+    if (refs["ph"]) setSlider(refs["ph"], s.phaseB);
     if (refs["pa"]) setSlider(refs["pa"], s.perturbA);
     if (refs["pb"]) setSlider(refs["pb"], s.perturbB);
   }
@@ -160,6 +162,14 @@ export function createControls(engine: WaveformEngine): HTMLElement {
   });
   refs["gp"] = gp.ref;
 
+  const ph = createSlider({
+    label: "Phase offset B",
+    min: 0, max: 360, value: 0,
+    formatValue: (v) => v + "\u00B0",
+    onChange: (v) => engine.setPhaseB(v * Math.PI / 180),
+  });
+  refs["ph"] = ph.ref;
+
   const uf = createSlider({
     label: "Model update frequency",
     min: 0, max: UPDATE_LABELS.length - 1, value: 0,
@@ -167,7 +177,7 @@ export function createControls(engine: WaveformEngine): HTMLElement {
     onChange: (v) => engine.setUpdateInterval(UPDATE_STEPS[v] ?? 0),
   });
 
-  row2.append(cab.el, cba.el, gp.el, uf.el);
+  row2.append(cab.el, cba.el, gp.el, ph.el, uf.el);
 
   // Row 3: Per-signal perturbation
   const row3 = document.createElement("div");

@@ -4,7 +4,7 @@ import type { ThemeColors } from "../../lib/dark-mode";
 // --- Signal model: 2 waveforms with directional coupling ---
 
 const SIGNAL_A = { label: "Waveform A", color: "#3266ad", freq: 1.0 };
-const SIGNAL_B = { label: "Waveform B", color: "#D85A30", freq: 1.6 };
+const SIGNAL_B = { label: "Waveform B", color: "#D85A30", freq: 1.0 };
 
 const X_MAX = 6 * Math.PI;
 const AMPLITUDE = 90;
@@ -21,6 +21,7 @@ export class WaveformEngine {
   private perturbation = 0;
   private perturbA = 0;
   private perturbB = 0;
+  private phaseB = 0;
   private updateInterval = 0;
   private animId = 0;
   private panels: Array<{ draw: () => void; stop: () => void }> = [];
@@ -30,6 +31,7 @@ export class WaveformEngine {
   setPerturbation(v: number): void { this.perturbation = v; }
   setPerturbA(v: number): void { this.perturbA = v; }
   setPerturbB(v: number): void { this.perturbB = v; }
+  setPhaseB(v: number): void { this.phaseB = v; }
   setUpdateInterval(v: number): void { this.updateInterval = v; }
   getUpdateInterval(): number { return this.updateInterval; }
 
@@ -59,7 +61,7 @@ export class WaveformEngine {
   }
 
   rawB(x: number): number {
-    const base = Math.sin(SIGNAL_B.freq * x + this.time);
+    const base = Math.sin(SIGNAL_B.freq * x + this.time + this.phaseB);
     const perturb = this.perturbation * Math.sin(0.5 * x + this.time * 0.3);
     return (base + perturb) * AMPLITUDE * (1 + this.perturbB);
   }
