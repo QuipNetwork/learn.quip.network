@@ -1,9 +1,20 @@
 import { onThemeChange } from "../../lib/dark-mode";
 import { createNonlinearContent } from "./content";
 import {
-  WaveformCanvas, SignalGridCanvas, AggregateCanvas,
+  WaveformEngine, InputCanvas, CoupledCanvas, AggregateCanvas,
 } from "./WaveformCanvas";
 import { createControls } from "./controls";
+
+function vizHeading(text: string, top?: boolean): HTMLElement {
+  const h = document.createElement("h3");
+  h.style.cssText =
+    "font-size:0.875rem;font-weight:600;color:var(--color-text-secondary);" +
+    "margin-bottom:var(--spacing-sm);text-transform:uppercase;" +
+    "letter-spacing:0.05em" +
+    (top ? "" : ";margin-top:var(--spacing-lg)");
+  h.textContent = text;
+  return h;
+}
 
 export function mountNonlinear(container: HTMLElement): () => void {
   const page = document.createElement("div");
@@ -18,85 +29,60 @@ export function mountNonlinear(container: HTMLElement): () => void {
   const preSections = children.slice(0, 7);
   const postSections = children.slice(7);
 
-  for (const el of preSections) {
-    page.append(el);
-  }
+  for (const el of preSections) page.append(el);
 
-  // All signals overlay
-  const vizLabel = document.createElement("h3");
-  vizLabel.style.cssText =
-    "font-size:0.875rem;font-weight:600;color:var(--color-text-secondary);" +
-    "margin-bottom:var(--spacing-sm);text-transform:uppercase;" +
-    "letter-spacing:0.05em";
-  vizLabel.textContent = "All Signals";
+  // Engine drives all three canvases
+  const engine = new WaveformEngine();
+  const controls = createControls(engine);
 
-  const vizContainer = document.createElement("div");
-  vizContainer.className = "viz-container";
-  const waveCanvas = new WaveformCanvas(vizContainer);
-  const controls = createControls(waveCanvas);
+  // Graph 1: Unmodified Input
+  const input1 = document.createElement("div");
+  input1.className = "viz-container";
+  const inputCanvas = new InputCanvas(input1, engine);
+  engine.addPanel(inputCanvas);
 
-  // 2x2 grid: each signal vs its linear prediction
-  const gridLabel = document.createElement("h3");
-  gridLabel.style.cssText =
-    "font-size:0.875rem;font-weight:600;color:var(--color-text-secondary);" +
-    "margin-top:var(--spacing-lg);margin-bottom:var(--spacing-xs);" +
-    "text-transform:uppercase;letter-spacing:0.05em";
-  gridLabel.textContent = "Individual Signals vs. Linear Prediction";
+  // Graph 2: Coupled Output with predictions
+  const output2 = document.createElement("div");
+  output2.className = "viz-container";
+  const coupledCanvas = new CoupledCanvas(output2, engine);
+  engine.addPanel(coupledCanvas);
 
-  const gridCaption = document.createElement("p");
-  gridCaption.style.cssText =
+  // Caption for prediction
+  const caption = document.createElement("p");
+  caption.style.cssText =
     "font-size:0.8125rem;color:var(--color-text-secondary);" +
     "margin-bottom:var(--spacing-sm);line-height:1.5";
-  gridCaption.textContent =
-    "The dashed line is a least-squares sinusoidal fit " +
+  caption.textContent =
+    "Dashed lines show a least-squares sinusoidal fit " +
     "(y = a\u00B7sin(\u03C9t) + b\u00B7cos(\u03C9t) + c) retrained " +
-    "at a configurable interval. Under predictable conditions it " +
-    "tracks almost perfectly. As coupling increases, non-linear " +
-    "harmonics and amplitude modulation appear that a single-" +
-    "frequency model cannot capture. Increase the update interval " +
-    "to simulate a model retrained hourly or daily \u2014 between " +
-    "updates, the prediction is a stale extrapolation that drifts " +
-    "further from reality as non-linear effects accumulate.";
+    "at the configured interval. Under predictable conditions the " +
+    "model tracks almost perfectly. With coupling, non-linear " +
+    "harmonics appear that a single-frequency model cannot capture.";
 
-  const gridContainer = document.createElement("div");
-  gridContainer.className = "viz-container";
-  const gridCanvas = new SignalGridCanvas(gridContainer, waveCanvas);
-  waveCanvas.setGridCanvas(gridCanvas);
-
-  // Aggregate: sum of all signals vs sum of predictions
-  const aggLabel = document.createElement("h3");
-  aggLabel.style.cssText =
-    "font-size:0.875rem;font-weight:600;color:var(--color-text-secondary);" +
-    "margin-top:var(--spacing-lg);margin-bottom:var(--spacing-sm);" +
-    "text-transform:uppercase;letter-spacing:0.05em";
-  aggLabel.textContent = "Aggregate Portfolio Signal";
-
-  const aggContainer = document.createElement("div");
-  aggContainer.className = "viz-container";
-  const aggCanvas = new AggregateCanvas(aggContainer, waveCanvas);
-  waveCanvas.setAggCanvas(aggCanvas);
+  // Graph 3: Aggregate with prediction
+  const agg3 = document.createElement("div");
+  agg3.className = "viz-container";
+  const aggCanvas = new AggregateCanvas(agg3, engine);
+  engine.addPanel(aggCanvas);
 
   page.append(
-    controls, vizLabel, vizContainer,
-    gridLabel, gridCaption, gridContainer,
-    aggLabel, aggContainer,
+    controls,
+    vizHeading("Unmodified Input (no coupling)", true), input1,
+    vizHeading("Coupled Output"), caption, output2,
+    vizHeading("Aggregate"), agg3,
   );
 
-  for (const el of postSections) {
-    page.append(el);
-  }
+  for (const el of postSections) page.append(el);
 
   container.append(page);
-  waveCanvas.start();
+  engine.start();
 
   const unsubTheme = onThemeChange(() => {
-    // Canvas redraws each frame via rAF
+    // Canvases redraw each frame via rAF
   });
 
   return () => {
-    waveCanvas.stop();
-    gridCanvas.stop();
-    aggCanvas.stop();
+    engine.stop();
     unsubTheme();
   };
 }

@@ -1,5 +1,5 @@
-import type { WaveformCanvas } from "./WaveformCanvas";
-import { WAVEFORMS } from "./WaveformCanvas";
+import type { WaveformEngine } from "./WaveformCanvas";
+import { SIGNALS } from "./WaveformCanvas";
 
 interface SliderRef {
   input: HTMLInputElement;
@@ -22,13 +22,9 @@ function createSlider(opts: {
   const labelEl = document.createElement("label");
   if (opts.color) {
     const swatch = document.createElement("span");
-    swatch.style.display = "inline-block";
-    swatch.style.width = "10px";
-    swatch.style.height = "10px";
-    swatch.style.borderRadius = "2px";
-    swatch.style.backgroundColor = opts.color;
-    swatch.style.marginRight = "6px";
-    swatch.style.verticalAlign = "middle";
+    swatch.style.cssText =
+      "display:inline-block;width:10px;height:10px;border-radius:2px;" +
+      "margin-right:6px;vertical-align:middle;background:" + opts.color;
     labelEl.append(swatch);
   }
   labelEl.append(document.createTextNode(opts.label));
@@ -39,21 +35,18 @@ function createSlider(opts: {
   input.max = String(opts.max);
   input.value = String(opts.value);
 
-  const valueDisplay = document.createElement("span");
-  valueDisplay.className = "control-value";
-  valueDisplay.textContent = opts.formatValue(opts.value);
+  const display = document.createElement("span");
+  display.className = "control-value";
+  display.textContent = opts.formatValue(opts.value);
 
   input.addEventListener("input", () => {
     const v = Number(input.value);
-    valueDisplay.textContent = opts.formatValue(v);
+    display.textContent = opts.formatValue(v);
     opts.onChange(v);
   });
 
-  group.append(labelEl, input, valueDisplay);
-  return {
-    el: group,
-    ref: { input, display: valueDisplay, format: opts.formatValue },
-  };
+  group.append(labelEl, input, display);
+  return { el: group, ref: { input, display, format: opts.formatValue } };
 }
 
 function setSlider(ref: SliderRef, value: number): void {
@@ -62,166 +55,147 @@ function setSlider(ref: SliderRef, value: number): void {
   ref.input.dispatchEvent(new Event("input"));
 }
 
-function formatPercent(v: number): string {
-  return v + "%";
-}
-
-function formatSignedPercent(v: number): string {
-  if (v > 0) return "+" + v + "%";
-  return v + "%";
-}
+function pct(v: number): string { return v + "%"; }
+function signedPct(v: number): string { return (v > 0 ? "+" : "") + v + "%"; }
 
 interface Scenario {
   label: string;
-  coupling: number;
+  couplingAB: number;
+  couplingBA: number;
   perturbation: number;
-  signals: number[];
+  perturbA: number;
+  perturbB: number;
 }
 
 const SCENARIOS: Scenario[] = [
   {
-    label: "Predictable conditions",
-    coupling: 0,
-    perturbation: 0,
-    signals: [0, 0, 0, 0],
+    label: "Predictable",
+    couplingAB: 0, couplingBA: 0,
+    perturbation: 0, perturbA: 0, perturbB: 0,
   },
   {
     label: "Amplification",
-    coupling: 70,
-    perturbation: 35,
-    signals: [30, 0, 20, 0],
+    couplingAB: 70, couplingBA: 70,
+    perturbation: 30, perturbA: 30, perturbB: 30,
   },
   {
     label: "Destruction",
-    coupling: 80,
-    perturbation: -40,
-    signals: [-40, 0, -50, -20],
+    couplingAB: 75, couplingBA: 75,
+    perturbation: -35, perturbA: -40, perturbB: 40,
   },
   {
     label: "Volatility",
-    coupling: 90,
-    perturbation: -30,
-    signals: [50, -30, -60, 40],
+    couplingAB: 90, couplingBA: 85,
+    perturbation: -30, perturbA: 50, perturbB: -60,
   },
 ];
 
-export function createControls(canvas: WaveformCanvas): HTMLElement {
+const UPDATE_LABELS = [
+  "Continuous", "1 hour", "6 hours", "12 hours", "1 day", "1 week",
+];
+const UPDATE_STEPS = [0, 15, 30, 50, 80, 150];
+
+export function createControls(engine: WaveformEngine): HTMLElement {
   const wrapper = document.createElement("div");
 
-  // Scenario buttons
-  const scenarioRow = document.createElement("div");
-  scenarioRow.className = "viz-controls";
-  scenarioRow.style.borderBottomLeftRadius = "0";
-  scenarioRow.style.borderBottomRightRadius = "0";
-  scenarioRow.style.marginBottom = "0";
-  scenarioRow.style.gap = "var(--spacing-sm)";
+  const refs: Record<string, SliderRef> = {};
 
-  const scenarioLabel = document.createElement("span");
-  scenarioLabel.style.fontSize = "0.75rem";
-  scenarioLabel.style.fontWeight = "600";
-  scenarioLabel.style.color = "var(--color-text-secondary)";
-  scenarioLabel.style.textTransform = "uppercase";
-  scenarioLabel.style.letterSpacing = "0.05em";
-  scenarioLabel.style.whiteSpace = "nowrap";
-  scenarioLabel.textContent = "Scenarios";
-  scenarioRow.append(scenarioLabel);
-
-  // Collect slider refs so scenarios can set them
-  const sliderRefs: {
-    coupling?: SliderRef;
-    perturbation?: SliderRef;
-    signals: SliderRef[];
-  } = { signals: [] };
-
-  function applyScenario(s: Scenario): void {
-    if (sliderRefs.coupling) setSlider(sliderRefs.coupling, s.coupling);
-    if (sliderRefs.perturbation) {
-      setSlider(sliderRefs.perturbation, s.perturbation);
-    }
-    for (let i = 0; i < s.signals.length; i++) {
-      const ref = sliderRefs.signals[i];
-      if (ref) setSlider(ref, s.signals[i] ?? 0);
-    }
+  function apply(s: Scenario): void {
+    if (refs["cab"]) setSlider(refs["cab"], s.couplingAB);
+    if (refs["cba"]) setSlider(refs["cba"], s.couplingBA);
+    if (refs["gp"]) setSlider(refs["gp"], s.perturbation);
+    if (refs["pa"]) setSlider(refs["pa"], s.perturbA);
+    if (refs["pb"]) setSlider(refs["pb"], s.perturbB);
   }
 
-  for (const scenario of SCENARIOS) {
+  // Row 1: Scenario buttons
+  const row1 = document.createElement("div");
+  row1.className = "viz-controls";
+  row1.style.cssText =
+    "border-bottom-left-radius:0;border-bottom-right-radius:0;" +
+    "margin-bottom:0;gap:var(--spacing-sm)";
+
+  const label = document.createElement("span");
+  label.style.cssText =
+    "font-size:0.75rem;font-weight:600;color:var(--color-text-secondary);" +
+    "text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap";
+  label.textContent = "Scenarios";
+  row1.append(label);
+
+  for (const s of SCENARIOS) {
     const btn = document.createElement("button");
     btn.className = "btn btn-secondary";
-    btn.style.fontSize = "0.75rem";
-    btn.style.padding = "4px 10px";
-    btn.textContent = scenario.label;
-    btn.addEventListener("click", () => applyScenario(scenario));
-    scenarioRow.append(btn);
+    btn.style.cssText = "font-size:0.75rem;padding:4px 10px";
+    btn.textContent = s.label;
+    btn.addEventListener("click", () => apply(s));
+    row1.append(btn);
   }
 
-  // Global controls
-  const globalRow = document.createElement("div");
-  globalRow.className = "viz-controls";
-  globalRow.style.borderRadius = "0";
-  globalRow.style.marginTop = "0";
-  globalRow.style.marginBottom = "0";
-  globalRow.style.borderTop = "1px solid var(--color-border)";
+  // Row 2: Coupling + global perturbation + update frequency
+  const row2 = document.createElement("div");
+  row2.className = "viz-controls";
+  row2.style.cssText = "border-radius:0;margin:0;border-top:1px solid var(--color-border)";
 
-  const coupling = createSlider({
-    label: "Coupling strength",
-    min: 0,
-    max: 100,
-    value: 0,
-    formatValue: formatPercent,
-    onChange: (v) => canvas.setCoupling(v / 100),
+  const cab = createSlider({
+    label: "A \u2192 B coupling",
+    min: 0, max: 100, value: 0,
+    formatValue: pct,
+    onChange: (v) => engine.setCouplingAB(v / 100),
   });
-  sliderRefs.coupling = coupling.ref;
+  refs["cab"] = cab.ref;
 
-  const perturb = createSlider({
+  const cba = createSlider({
+    label: "B \u2192 A coupling",
+    min: 0, max: 100, value: 0,
+    formatValue: pct,
+    onChange: (v) => engine.setCouplingBA(v / 100),
+  });
+  refs["cba"] = cba.ref;
+
+  const gp = createSlider({
     label: "Global perturbation",
-    min: -50,
-    max: 50,
-    value: 0,
-    formatValue: formatSignedPercent,
-    onChange: (v) => canvas.setPerturbation(v / 100),
+    min: -50, max: 50, value: 0,
+    formatValue: signedPct,
+    onChange: (v) => engine.setPerturbation(v / 100),
   });
-  sliderRefs.perturbation = perturb.ref;
+  refs["gp"] = gp.ref;
 
-  const UPDATE_LABELS = [
-    "Continuous", "1 hour", "6 hours", "12 hours", "1 day", "1 week",
-  ];
-  const UPDATE_STEPS = [0, 15, 30, 50, 80, 150];
-
-  const updateFreq = createSlider({
+  const uf = createSlider({
     label: "Model update frequency",
-    min: 0,
-    max: UPDATE_LABELS.length - 1,
-    value: 0,
+    min: 0, max: UPDATE_LABELS.length - 1, value: 0,
     formatValue: (v) => UPDATE_LABELS[v] ?? "Continuous",
-    onChange: (v) => canvas.setUpdateInterval(UPDATE_STEPS[v] ?? 0),
+    onChange: (v) => engine.setUpdateInterval(UPDATE_STEPS[v] ?? 0),
   });
 
-  globalRow.append(coupling.el, perturb.el, updateFreq.el);
+  row2.append(cab.el, cba.el, gp.el, uf.el);
 
-  // Per-signal controls
-  const signalRow = document.createElement("div");
-  signalRow.className = "viz-controls";
-  signalRow.style.marginTop = "0";
-  signalRow.style.borderTop = "1px solid var(--color-border)";
-  signalRow.style.borderTopLeftRadius = "0";
-  signalRow.style.borderTopRightRadius = "0";
+  // Row 3: Per-signal perturbation
+  const row3 = document.createElement("div");
+  row3.className = "viz-controls";
+  row3.style.cssText =
+    "margin-top:0;border-top:1px solid var(--color-border);" +
+    "border-top-left-radius:0;border-top-right-radius:0";
 
-  for (let i = 0; i < WAVEFORMS.length; i++) {
-    const wf = WAVEFORMS[i]!;
-    const slider = createSlider({
-      label: wf.label,
-      min: -80,
-      max: 80,
-      value: 0,
-      color: wf.color,
-      formatValue: formatSignedPercent,
-      onChange: (v) => canvas.setSignalPerturbation(i, v / 100),
-    });
-    slider.el.style.minWidth = "140px";
-    sliderRefs.signals.push(slider.ref);
-    signalRow.append(slider.el);
-  }
+  const pa = createSlider({
+    label: SIGNALS[0].label,
+    min: -80, max: 80, value: 0,
+    color: SIGNALS[0].color,
+    formatValue: signedPct,
+    onChange: (v) => engine.setPerturbA(v / 100),
+  });
+  refs["pa"] = pa.ref;
 
-  wrapper.append(scenarioRow, globalRow, signalRow);
+  const pb = createSlider({
+    label: SIGNALS[1].label,
+    min: -80, max: 80, value: 0,
+    color: SIGNALS[1].color,
+    formatValue: signedPct,
+    onChange: (v) => engine.setPerturbB(v / 100),
+  });
+  refs["pb"] = pb.ref;
+
+  row3.append(pa.el, pb.el);
+
+  wrapper.append(row1, row2, row3);
   return wrapper;
 }
