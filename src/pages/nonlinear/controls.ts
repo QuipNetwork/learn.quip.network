@@ -72,17 +72,17 @@ const SCENARIOS: Scenario[] = [
   {
     label: "Predictable",
     couplingAB: 0, couplingBA: 0,
-    perturbation: 0, perturbA: 0, perturbB: 0, phaseB: 0,
+    perturbation: 0, perturbA: 0, perturbB: 0, phaseB: 90,
   },
   {
     label: "Amplification",
     couplingAB: 70, couplingBA: 70,
-    perturbation: 20, perturbA: 0, perturbB: 0, phaseB: 0,
+    perturbation: 0, perturbA: 0, perturbB: 0, phaseB: 0,
   },
   {
     label: "Destruction",
-    couplingAB: 75, couplingBA: 75,
-    perturbation: 20, perturbA: 0, perturbB: 0, phaseB: 180,
+    couplingAB: 70, couplingBA: 70,
+    perturbation: 0, perturbA: 0, perturbB: 0, phaseB: 180,
   },
   {
     label: "Volatility",
@@ -164,7 +164,7 @@ export function createControls(engine: WaveformEngine): HTMLElement {
 
   const ph = createSlider({
     label: "Phase offset B",
-    min: 0, max: 360, value: 0,
+    min: 0, max: 360, value: 90,
     formatValue: (v) => v + "\u00B0",
     onChange: (v) => engine.setPhaseB(v * Math.PI / 180),
   });

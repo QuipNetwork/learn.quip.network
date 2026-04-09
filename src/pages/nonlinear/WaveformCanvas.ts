@@ -21,7 +21,7 @@ export class WaveformEngine {
   private perturbation = 0;
   private perturbA = 0;
   private perturbB = 0;
-  private phaseB = 0;
+  private phaseB = Math.PI / 2; // default 90°
   private updateInterval = 0;
   private animId = 0;
   private panels: Array<{ draw: () => void; stop: () => void }> = [];
