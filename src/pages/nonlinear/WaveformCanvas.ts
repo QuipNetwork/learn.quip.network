@@ -211,7 +211,9 @@ export class WaveformCanvas {
 const GRID_HEIGHT = 400;
 const CELL_PAD = 8;
 const LABEL_H = 20;
-const PREDICT_WIN = 80;
+// Minimum window must span at least 1.5 full wavelengths
+// for the sinusoidal fit to resolve the frequency.
+const MIN_CYCLES = 1.5;
 
 // Least-squares sinusoidal fit over a trailing window.
 // Fits y = a*sin(ωt) + b*cos(ωt) + c to the window, then
@@ -402,10 +404,14 @@ export class SignalGridCanvas {
       actual.push(this.source.computeYForWaveform(wf, x) / AMPLITUDE * amp);
     }
 
-    // Sinusoidal fit using the signal's base frequency
-    const predicted = sinusoidalPredict(
-      actual, PREDICT_WIN, wf.freq, xPerStep,
+    // Window must cover at least MIN_CYCLES full wavelengths
+    // so the sinusoidal fit can resolve the frequency.
+    const wavelengthInSteps = (2 * Math.PI / wf.freq) / xPerStep;
+    const win = Math.min(
+      steps,
+      Math.max(40, Math.ceil(wavelengthInSteps * MIN_CYCLES)),
     );
+    const predicted = sinusoidalPredict(actual, win, wf.freq, xPerStep);
 
     // Draw linear prediction (dashed, behind)
     this.ctx.save();
