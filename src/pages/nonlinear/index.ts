@@ -37,9 +37,22 @@ export function mountNonlinear(container: HTMLElement): () => void {
   const gridLabel = document.createElement("h3");
   gridLabel.style.cssText =
     "font-size:0.875rem;font-weight:600;color:var(--color-text-secondary);" +
-    "margin-top:var(--spacing-lg);margin-bottom:var(--spacing-sm);" +
+    "margin-top:var(--spacing-lg);margin-bottom:var(--spacing-xs);" +
     "text-transform:uppercase;letter-spacing:0.05em";
   gridLabel.textContent = "Individual Signals vs. Linear Prediction";
+
+  const gridCaption = document.createElement("p");
+  gridCaption.style.cssText =
+    "font-size:0.8125rem;color:var(--color-text-secondary);" +
+    "margin-bottom:var(--spacing-sm);line-height:1.5";
+  gridCaption.textContent =
+    "The dashed line is a least-squares sinusoidal fit " +
+    "(y = a\u00B7sin(\u03C9t) + b\u00B7cos(\u03C9t) + c) trained on " +
+    "a trailing window of each signal. Under normal conditions it " +
+    "tracks almost perfectly. As coupling increases, non-linear " +
+    "harmonics and amplitude modulation appear that a single-" +
+    "frequency model cannot capture \u2014 the prediction diverges " +
+    "from reality.";
 
   const gridContainer = document.createElement("div");
   gridContainer.className = "viz-container";
@@ -48,7 +61,7 @@ export function mountNonlinear(container: HTMLElement): () => void {
 
   page.append(
     controls, vizLabel, vizContainer,
-    gridLabel, gridContainer,
+    gridLabel, gridCaption, gridContainer,
   );
 
   for (const el of postSections) {
