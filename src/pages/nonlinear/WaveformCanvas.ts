@@ -33,6 +33,7 @@ export class WaveformCanvas {
   private dpr: number;
   private resizeObserver: ResizeObserver;
   private gridCanvas: SignalGridCanvas | null = null;
+  private aggCanvas: AggregateCanvas | null = null;
 
   constructor(container: HTMLElement) {
     this.dpr = window.devicePixelRatio || 1;
@@ -61,6 +62,10 @@ export class WaveformCanvas {
 
   setGridCanvas(grid: SignalGridCanvas): void {
     this.gridCanvas = grid;
+  }
+
+  setAggCanvas(agg: AggregateCanvas): void {
+    this.aggCanvas = agg;
   }
 
   private syncSize(): void {
@@ -167,6 +172,9 @@ export class WaveformCanvas {
 
     if (this.gridCanvas) {
       this.gridCanvas.draw();
+    }
+    if (this.aggCanvas) {
+      this.aggCanvas.draw();
     }
   }
 
@@ -529,5 +537,198 @@ export class SignalGridCanvas {
     this.ctx.restore();
     this.ctx.fillStyle = theme.textSecondary;
     this.ctx.fillText("Linear", legendX - 37, legendY);
+  }
+}
+
+// --- Aggregate: sum of all signals vs sum of all predictions ---
+
+const AGG_HEIGHT = 200;
+const AGG_LABEL_H = 24;
+
+export class AggregateCanvas {
+  private canvas: HTMLCanvasElement;
+  private ctx: CanvasRenderingContext2D;
+  private dpr: number;
+  private source: WaveformCanvas;
+  private resizeObserver: ResizeObserver;
+
+  constructor(container: HTMLElement, source: WaveformCanvas) {
+    this.source = source;
+    this.dpr = window.devicePixelRatio || 1;
+
+    this.canvas = document.createElement("canvas");
+    this.canvas.style.width = "100%";
+    this.canvas.style.height = AGG_HEIGHT + "px";
+    this.canvas.style.display = "block";
+    this.canvas.setAttribute("role", "img");
+    this.canvas.setAttribute(
+      "aria-label",
+      "Aggregate: sum of all signals vs sum of linear predictions",
+    );
+    container.append(this.canvas);
+
+    const rawCtx = this.canvas.getContext("2d");
+    if (!rawCtx) {
+      throw new Error("Canvas 2D context unavailable");
+    }
+    this.ctx = rawCtx;
+
+    this.resizeObserver = new ResizeObserver(() => this.syncSize());
+    this.resizeObserver.observe(container);
+    this.syncSize();
+  }
+
+  stop(): void {
+    this.resizeObserver.disconnect();
+  }
+
+  private syncSize(): void {
+    const cssWidth = this.canvas.clientWidth;
+    this.canvas.width = cssWidth * this.dpr;
+    this.canvas.height = AGG_HEIGHT * this.dpr;
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.scale(this.dpr, this.dpr);
+  }
+
+  draw(): void {
+    const w = this.canvas.clientWidth;
+    const h = AGG_HEIGHT;
+    const theme = getThemeColors();
+    const plotH = h - AGG_LABEL_H;
+    const cy = plotH / 2;
+    const steps = Math.max(w, 200);
+    const amp = plotH * 0.35;
+    const xPerStep = X_MAX / steps;
+
+    this.ctx.clearRect(0, 0, w, h);
+    this.ctx.fillStyle = theme.bg;
+    this.ctx.fillRect(0, 0, w, h);
+
+    // Gridlines
+    this.ctx.strokeStyle = theme.grid;
+    this.ctx.lineWidth = 1;
+    for (let i = 1; i <= 3; i++) {
+      const y = (plotH / 4) * i;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, y);
+      this.ctx.lineTo(w, y);
+      this.ctx.stroke();
+    }
+
+    // Zero line
+    this.ctx.save();
+    this.ctx.globalAlpha = 0.5;
+    this.ctx.strokeStyle = theme.zero;
+    this.ctx.beginPath();
+    this.ctx.moveTo(0, cy);
+    this.ctx.lineTo(w, cy);
+    this.ctx.stroke();
+    this.ctx.restore();
+
+    // Compute aggregate actual and predicted across all signals
+    const actualSum: number[] = new Array(steps + 1).fill(0);
+    const predictedSum: number[] = new Array(steps + 1).fill(0);
+
+    for (const wf of WAVEFORMS) {
+      const wavelengthInSteps = (2 * Math.PI / wf.freq) / xPerStep;
+      const win = Math.min(
+        steps,
+        Math.max(40, Math.ceil(wavelengthInSteps * MIN_CYCLES)),
+      );
+      const pad = win;
+
+      const allValues: number[] = [];
+      for (let i = -pad; i <= steps; i++) {
+        const x = i * xPerStep;
+        allValues.push(
+          this.source.computeYForWaveform(wf, x) / AMPLITUDE * amp,
+        );
+      }
+
+      const actual = allValues.slice(pad);
+      const allPredicted = sinusoidalPredict(
+        allValues, win, wf.freq, xPerStep,
+        this.source.getUpdateInterval(), -pad,
+      );
+      const predicted = allPredicted.slice(pad);
+
+      for (let i = 0; i <= steps; i++) {
+        actualSum[i] = (actualSum[i] ?? 0) + (actual[i] ?? 0);
+        predictedSum[i] = (predictedSum[i] ?? 0) + (predicted[i] ?? 0);
+      }
+    }
+
+    // Draw predicted aggregate (dashed, behind)
+    this.ctx.save();
+    this.ctx.setLineDash([8, 5]);
+    this.ctx.strokeStyle = theme.textSecondary;
+    this.ctx.lineWidth = 2;
+    this.ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const px = (i / steps) * w;
+      const py = cy - (predictedSum[i] ?? 0);
+      if (i === 0) this.ctx.moveTo(px, py);
+      else this.ctx.lineTo(px, py);
+    }
+    this.ctx.stroke();
+    this.ctx.setLineDash([]);
+    this.ctx.restore();
+
+    // Fill area between actual and zero
+    this.ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const px = (i / steps) * w;
+      const py = cy - (actualSum[i] ?? 0);
+      if (i === 0) this.ctx.moveTo(px, py);
+      else this.ctx.lineTo(px, py);
+    }
+    this.ctx.save();
+    this.ctx.lineTo(w, cy);
+    this.ctx.lineTo(0, cy);
+    this.ctx.closePath();
+    this.ctx.globalAlpha = 0.1;
+    this.ctx.fillStyle = "#3266ad";
+    this.ctx.fill();
+    this.ctx.restore();
+
+    // Draw actual aggregate (solid)
+    this.ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const px = (i / steps) * w;
+      const py = cy - (actualSum[i] ?? 0);
+      if (i === 0) this.ctx.moveTo(px, py);
+      else this.ctx.lineTo(px, py);
+    }
+    this.ctx.strokeStyle = "#3266ad";
+    this.ctx.lineWidth = 2.5;
+    this.ctx.stroke();
+
+    // Legend
+    const legendY = plotH + AGG_LABEL_H / 2;
+    this.ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
+    this.ctx.textBaseline = "middle";
+    this.ctx.textAlign = "left";
+
+    // Actual swatch
+    const leftX = w / 2 - 120;
+    this.ctx.fillStyle = "#3266ad";
+    this.ctx.fillRect(leftX - 20, legendY - 1.5, 14, 3);
+    this.ctx.fillStyle = theme.text;
+    this.ctx.fillText("Actual aggregate", leftX, legendY);
+
+    // Predicted swatch
+    const rightX = w / 2 + 40;
+    this.ctx.save();
+    this.ctx.setLineDash([5, 3]);
+    this.ctx.strokeStyle = theme.textSecondary;
+    this.ctx.lineWidth = 2;
+    this.ctx.beginPath();
+    this.ctx.moveTo(rightX - 20, legendY);
+    this.ctx.lineTo(rightX - 4, legendY);
+    this.ctx.stroke();
+    this.ctx.setLineDash([]);
+    this.ctx.restore();
+    this.ctx.fillStyle = theme.text;
+    this.ctx.fillText("Linear prediction", rightX, legendY);
   }
 }

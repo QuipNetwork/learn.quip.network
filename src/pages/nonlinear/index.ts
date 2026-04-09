@@ -1,6 +1,8 @@
 import { onThemeChange } from "../../lib/dark-mode";
 import { createNonlinearContent } from "./content";
-import { WaveformCanvas, SignalGridCanvas } from "./WaveformCanvas";
+import {
+  WaveformCanvas, SignalGridCanvas, AggregateCanvas,
+} from "./WaveformCanvas";
 import { createControls } from "./controls";
 
 export function mountNonlinear(container: HTMLElement): () => void {
@@ -61,9 +63,23 @@ export function mountNonlinear(container: HTMLElement): () => void {
   const gridCanvas = new SignalGridCanvas(gridContainer, waveCanvas);
   waveCanvas.setGridCanvas(gridCanvas);
 
+  // Aggregate: sum of all signals vs sum of predictions
+  const aggLabel = document.createElement("h3");
+  aggLabel.style.cssText =
+    "font-size:0.875rem;font-weight:600;color:var(--color-text-secondary);" +
+    "margin-top:var(--spacing-lg);margin-bottom:var(--spacing-sm);" +
+    "text-transform:uppercase;letter-spacing:0.05em";
+  aggLabel.textContent = "Aggregate Portfolio Signal";
+
+  const aggContainer = document.createElement("div");
+  aggContainer.className = "viz-container";
+  const aggCanvas = new AggregateCanvas(aggContainer, waveCanvas);
+  waveCanvas.setAggCanvas(aggCanvas);
+
   page.append(
     controls, vizLabel, vizContainer,
     gridLabel, gridCaption, gridContainer,
+    aggLabel, aggContainer,
   );
 
   for (const el of postSections) {
@@ -80,6 +96,7 @@ export function mountNonlinear(container: HTMLElement): () => void {
   return () => {
     waveCanvas.stop();
     gridCanvas.stop();
+    aggCanvas.stop();
     unsubTheme();
   };
 }
