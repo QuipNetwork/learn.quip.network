@@ -220,12 +220,14 @@ export class WaveformCanvas {
 const GRID_HEIGHT = 400;
 const CELL_PAD = 8;
 const LABEL_H = 20;
-// Minimum window must span at least 1.5 full wavelengths
-// for the sinusoidal fit to resolve the frequency.
-const MIN_CYCLES = 1.5;
+// Window must span at least 1 full wavelength to resolve
+// the frequency. More cycles improves accuracy but costs
+// locality — 1 cycle is sufficient for a pure sinusoid.
+const MIN_CYCLES = 1.0;
 
-// Fit y = a*sin(ωx) + b*cos(ωx) + c to samples in [lo, hi].
-// Returns coefficients {a, b, c} or null if under-determined.
+// Single-bin DFT fit: extract amplitude and phase of the
+// dominant frequency, plus DC offset. Numerically stable
+// and exact for pure sinusoids of the target frequency.
 function fitSinusoid(
   values: number[],
   lo: number,
@@ -236,42 +238,31 @@ function fitSinusoid(
   const count = hi - lo + 1;
   if (count < 3) return null;
 
-  let ss = 0, sc = 0, s1 = 0;
-  let sss = 0, ssc = 0, scc = 0;
-  let sy = 0, sys = 0, syc = 0;
+  // DC offset (mean)
+  let sumY = 0;
+  for (let j = lo; j <= hi; j++) {
+    sumY += values[j] ?? 0;
+  }
+  const c = sumY / count;
+
+  // Project residuals onto sin and cos basis
+  let sinProj = 0, cosProj = 0;
+  let sinNorm = 0, cosNorm = 0;
   for (let j = lo; j <= hi; j++) {
     const x = j * xPerStep;
     const sv = Math.sin(freq * x);
     const cv = Math.cos(freq * x);
-    const yj = values[j] ?? 0;
-    ss += sv;
-    sc += cv;
-    s1 += 1;
-    sss += sv * sv;
-    ssc += sv * cv;
-    scc += cv * cv;
-    sy += yj;
-    sys += yj * sv;
-    syc += yj * cv;
+    const residual = (values[j] ?? 0) - c;
+    sinProj += residual * sv;
+    cosProj += residual * cv;
+    sinNorm += sv * sv;
+    cosNorm += cv * cv;
   }
 
-  const det =
-    sss * (scc * s1 - sc * sc) -
-    ssc * (ssc * s1 - sc * ss) +
-    ss * (ssc * sc - scc * ss);
-  if (Math.abs(det) < 1e-10) return null;
+  const a = sinNorm > 1e-10 ? sinProj / sinNorm : 0;
+  const b = cosNorm > 1e-10 ? cosProj / cosNorm : 0;
 
-  return {
-    a: (sys * (scc * s1 - sc * sc) -
-        ssc * (syc * s1 - sc * sy) +
-        ss * (syc * sc - scc * sy)) / det,
-    b: (sss * (syc * s1 - sc * sy) -
-        sys * (ssc * s1 - sc * ss) +
-        ss * (ssc * sy - syc * ss)) / det,
-    c: (sss * (scc * sy - sc * syc) -
-        ssc * (ssc * sy - sc * sys) +
-        sys * (ssc * sc - scc * ss)) / det,
-  };
+  return { a, b, c };
 }
 
 // Sinusoidal prediction with discrete update intervals.
