@@ -70,13 +70,15 @@ export class WaveformEngine {
   coupledA(x: number): number {
     const raw = this.rawA(x);
     const bVal = this.rawB(x);
-    return raw + this.couplingBA * (bVal / AMPLITUDE) * (bVal / AMPLITUDE) * AMPLITUDE * 1.5 * Math.sin(SIGNAL_A.freq * x);
+    const bNorm = bVal / AMPLITUDE;
+    return raw + this.couplingBA * bNorm * bNorm * AMPLITUDE * 1.5 * Math.sin(SIGNAL_A.freq * x + this.time);
   }
 
   coupledB(x: number): number {
     const raw = this.rawB(x);
     const aVal = this.rawA(x);
-    return raw + this.couplingAB * (aVal / AMPLITUDE) * (aVal / AMPLITUDE) * AMPLITUDE * 1.5 * Math.sin(SIGNAL_B.freq * x);
+    const aNorm = aVal / AMPLITUDE;
+    return raw + this.couplingAB * aNorm * aNorm * AMPLITUDE * 1.5 * Math.sin(SIGNAL_B.freq * x + this.time + this.phaseB);
   }
 }
 
