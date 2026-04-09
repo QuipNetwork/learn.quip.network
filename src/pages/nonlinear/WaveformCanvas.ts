@@ -234,22 +234,21 @@ function fitSinusoid(
   hi: number,
   freq: number,
   xPerStep: number,
+  xOffset: number,
 ): { a: number; b: number; c: number } | null {
   const count = hi - lo + 1;
   if (count < 3) return null;
 
-  // DC offset (mean)
   let sumY = 0;
   for (let j = lo; j <= hi; j++) {
     sumY += values[j] ?? 0;
   }
   const c = sumY / count;
 
-  // Project residuals onto sin and cos basis
   let sinProj = 0, cosProj = 0;
   let sinNorm = 0, cosNorm = 0;
   for (let j = lo; j <= hi; j++) {
-    const x = j * xPerStep;
+    const x = (j + xOffset) * xPerStep;
     const sv = Math.sin(freq * x);
     const cv = Math.cos(freq * x);
     const residual = (values[j] ?? 0) - c;
@@ -270,47 +269,47 @@ function fitSinusoid(
 // its stale coefficients until the next update — simulating a
 // model retrained periodically (e.g., daily or hourly).
 // updateInterval = 0 means continuous (fit at every point).
+// xOffset: the spatial index of values[0] (e.g., -pad when
+// history samples precede the visible range).
 function sinusoidalPredict(
   values: number[],
   win: number,
   freq: number,
   xPerStep: number,
   updateInterval: number,
+  xOffset: number = 0,
 ): number[] {
   const n = values.length;
   const half = Math.floor(win / 2);
   const out: number[] = [];
 
-  // Continuous mode: fit centered window at every point
   if (updateInterval <= 0) {
     for (let i = 0; i < n; i++) {
       const lo = Math.max(0, i - half);
       const hi = Math.min(n - 1, i + half);
-      const fit = fitSinusoid(values, lo, hi, freq, xPerStep);
+      const fit = fitSinusoid(values, lo, hi, freq, xPerStep, xOffset);
       if (!fit) {
         out.push(values[i] ?? 0);
         continue;
       }
-      const x = i * xPerStep;
+      const x = (i + xOffset) * xPerStep;
       out.push(fit.a * Math.sin(freq * x) + fit.b * Math.cos(freq * x) + fit.c);
     }
     return out;
   }
 
-  // Discrete update mode: fit once per segment, extrapolate between
   let currentFit: { a: number; b: number; c: number } | null = null;
   for (let i = 0; i < n; i++) {
     if (i % updateInterval === 0) {
-      // Retrain: use samples up to this point (trailing window)
       const fitHi = i;
       const fitLo = Math.max(0, fitHi - win);
-      currentFit = fitSinusoid(values, fitLo, fitHi, freq, xPerStep);
+      currentFit = fitSinusoid(values, fitLo, fitHi, freq, xPerStep, xOffset);
     }
     if (!currentFit) {
       out.push(values[i] ?? 0);
       continue;
     }
-    const x = i * xPerStep;
+    const x = (i + xOffset) * xPerStep;
     out.push(
       currentFit.a * Math.sin(freq * x) +
       currentFit.b * Math.cos(freq * x) +
@@ -430,24 +429,33 @@ export class SignalGridCanvas {
     this.ctx.stroke();
     this.ctx.restore();
 
-    // Compute actual values
-    const actual: number[] = [];
+    // Compute actual values with extra history before the
+    // visible window so the fit has training data at the left edge.
     const xPerStep = X_MAX / steps;
-    for (let i = 0; i <= steps; i++) {
-      const x = i * xPerStep;
-      actual.push(this.source.computeYForWaveform(wf, x) / AMPLITUDE * amp);
-    }
-
-    // Window must cover at least MIN_CYCLES full wavelengths
-    // so the sinusoidal fit can resolve the frequency.
     const wavelengthInSteps = (2 * Math.PI / wf.freq) / xPerStep;
     const win = Math.min(
       steps,
       Math.max(40, Math.ceil(wavelengthInSteps * MIN_CYCLES)),
     );
-    const predicted = sinusoidalPredict(
-      actual, win, wf.freq, xPerStep, this.source.getUpdateInterval(),
+    const pad = win; // extra samples before visible range
+
+    const allValues: number[] = [];
+    for (let i = -pad; i <= steps; i++) {
+      const x = i * xPerStep;
+      allValues.push(this.source.computeYForWaveform(wf, x) / AMPLITUDE * amp);
+    }
+
+    // Actual visible values start at index `pad`
+    const actual = allValues.slice(pad);
+
+    // Run prediction on the full range (history + visible).
+    // xOffset = -pad so positions map to real spatial coordinates.
+    const allPredicted = sinusoidalPredict(
+      allValues, win, wf.freq, xPerStep,
+      this.source.getUpdateInterval(), -pad,
     );
+    // Trim to visible portion
+    const predicted = allPredicted.slice(pad);
 
     // Draw linear prediction (dashed, behind)
     this.ctx.save();
