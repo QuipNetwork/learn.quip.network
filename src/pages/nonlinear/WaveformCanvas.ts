@@ -67,19 +67,16 @@ export class WaveformEngine {
   }
 
   // Coupled signals (for Graph 2)
-  // Coupling uses the other signal's value directly (not squared)
-  // so the sign propagates: in-phase signals reinforce,
-  // anti-phase signals cancel.
+  // Add a fraction of the other signal directly.
+  // In-phase (0°): A + coupling*B ≈ A*(1+coupling) — amplified.
+  // Anti-phase (180°): A + coupling*(-A) = A*(1-coupling) — flattens.
+  // At 100% coupling + 180° phase, output is zero.
   coupledA(x: number): number {
-    const raw = this.rawA(x);
-    const bVal = this.rawB(x);
-    return raw + this.couplingBA * (bVal / AMPLITUDE) * raw;
+    return this.rawA(x) + this.couplingBA * this.rawB(x);
   }
 
   coupledB(x: number): number {
-    const raw = this.rawB(x);
-    const aVal = this.rawA(x);
-    return raw + this.couplingAB * (aVal / AMPLITUDE) * raw;
+    return this.rawB(x) + this.couplingAB * this.rawA(x);
   }
 }
 
