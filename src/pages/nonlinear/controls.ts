@@ -86,8 +86,8 @@ const SCENARIOS: Scenario[] = [
   },
   {
     label: "Volatility",
-    couplingAB: 90, couplingBA: 85,
-    perturbation: -30, perturbA: 50, perturbB: -60, phaseB: 90,
+    couplingAB: 100, couplingBA: 40,
+    perturbation: -50, perturbA: 80, perturbB: -80, phaseB: 137,
   },
 ];
 
@@ -172,7 +172,7 @@ export function createControls(engine: WaveformEngine): HTMLElement {
 
   const uf = createSlider({
     label: "Model update frequency",
-    min: 0, max: UPDATE_LABELS.length - 1, value: 0,
+    min: 0, max: UPDATE_LABELS.length - 1, value: 1,
     formatValue: (v) => UPDATE_LABELS[v] ?? "Continuous",
     onChange: (v) => engine.setUpdateInterval(UPDATE_STEPS[v] ?? 0),
   });

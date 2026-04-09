@@ -22,7 +22,7 @@ export class WaveformEngine {
   private perturbA = 0;
   private perturbB = 0;
   private phaseB = Math.PI / 2; // default 90°
-  private updateInterval = 0;
+  private updateInterval = 15; // default: 1 hour
   private animId = 0;
   private panels: Array<{ draw: () => void; stop: () => void }> = [];
 
@@ -56,13 +56,19 @@ export class WaveformEngine {
   // Raw uncoupled signals (for Graph 1)
   rawA(x: number): number {
     const base = Math.sin(SIGNAL_A.freq * x + this.time);
-    const perturb = this.perturbation * Math.sin(0.3 * x + this.time * 0.5);
+    const perturb = this.perturbation * (
+      Math.sin(0.317 * x + this.time * 0.53) +
+      0.4 * Math.sin(0.781 * x + this.time * 1.17)
+    );
     return (base + perturb) * AMPLITUDE * (1 + this.perturbA);
   }
 
   rawB(x: number): number {
     const base = Math.sin(SIGNAL_B.freq * x + this.time + this.phaseB);
-    const perturb = this.perturbation * Math.sin(0.5 * x + this.time * 0.3);
+    const perturb = this.perturbation * (
+      Math.sin(0.523 * x + this.time * 0.37) +
+      0.4 * Math.sin(0.919 * x + this.time * 0.83)
+    );
     return (base + perturb) * AMPLITUDE * (1 + this.perturbB);
   }
 
