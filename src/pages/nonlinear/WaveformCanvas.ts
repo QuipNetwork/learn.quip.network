@@ -280,14 +280,17 @@ function sinusoidalPredict(
   xOffset: number = 0,
 ): number[] {
   const n = values.length;
-  const half = Math.floor(win / 2);
   const out: number[] = [];
 
+  // Both modes use a trailing window — the prediction at position i
+  // is based only on data before i, like a real forecast. The off-screen
+  // history ensures every visible point has a full window behind it.
+
   if (updateInterval <= 0) {
+    // Continuous: refit trailing window at every point
     for (let i = 0; i < n; i++) {
-      const lo = Math.max(0, i - half);
-      const hi = Math.min(n - 1, i + half);
-      const fit = fitSinusoid(values, lo, hi, freq, xPerStep, xOffset);
+      const lo = Math.max(0, i - win);
+      const fit = fitSinusoid(values, lo, i, freq, xPerStep, xOffset);
       if (!fit) {
         out.push(values[i] ?? 0);
         continue;
@@ -298,12 +301,12 @@ function sinusoidalPredict(
     return out;
   }
 
+  // Discrete: refit once per interval, extrapolate between
   let currentFit: { a: number; b: number; c: number } | null = null;
   for (let i = 0; i < n; i++) {
     if (i % updateInterval === 0) {
-      const fitHi = i;
-      const fitLo = Math.max(0, fitHi - win);
-      currentFit = fitSinusoid(values, fitLo, fitHi, freq, xPerStep, xOffset);
+      const fitLo = Math.max(0, i - win);
+      currentFit = fitSinusoid(values, fitLo, i, freq, xPerStep, xOffset);
     }
     if (!currentFit) {
       out.push(values[i] ?? 0);
