@@ -15,14 +15,14 @@ export function createTunnelingControls(
 
   const sliderValue = document.createElement("span");
   sliderValue.className = "control-value";
-  sliderValue.textContent = "40";
+  sliderValue.textContent = "27";
 
   const slider = document.createElement("input");
   slider.type = "range";
   slider.min = "10";
   slider.max = "40";
   slider.step = "1";
-  slider.value = "40";
+  slider.value = "27";
   slider.setAttribute("aria-label", "Starting position");
 
   slider.addEventListener("input", () => {
@@ -79,6 +79,21 @@ export function createTunnelingControls(
   quantumCheck.append(quantumInput, quantumLabel);
   quantumGroup.append(quantumCheck);
 
-  wrap.append(sliderGroup, classicalGroup, quantumGroup);
+  // 4. Randomize landscape button
+  const randomGroup = document.createElement("div");
+  randomGroup.className = "control-group";
+
+  const randomBtn = document.createElement("button");
+  randomBtn.className = "viz-button";
+  randomBtn.textContent = "New landscape";
+  randomBtn.setAttribute("aria-label", "Generate a new random energy landscape");
+
+  randomBtn.addEventListener("click", () => {
+    canvas.randomize();
+  });
+
+  randomGroup.append(randomBtn);
+
+  wrap.append(sliderGroup, classicalGroup, quantumGroup, randomGroup);
   return wrap;
 }

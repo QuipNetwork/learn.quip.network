@@ -1,5 +1,10 @@
 import { getThemeColors } from "../../lib/dark-mode";
-import { E, findLocalMin, findGlobalMin } from "./energy";
+import {
+  E,
+  findLocalMin,
+  findGlobalMin,
+  randomizeLandscape,
+} from "./energy";
 import { GradientDescentPath } from "./GradientDescent";
 import { computeTunnelingPath } from "./TunnelingPath";
 import type { TunnelPathPoint } from "./TunnelingPath";
@@ -21,7 +26,7 @@ export class LandscapeCanvas {
   private frame = 0;
   private running = false;
 
-  private startX = 40;
+  private startX = 27;
   private showClassical = true;
   private showQuantum = true;
 
@@ -78,6 +83,12 @@ export class LandscapeCanvas {
 
   setShowQuantum(v: boolean): void {
     this.showQuantum = v;
+  }
+
+  randomize(): void {
+    randomizeLandscape();
+    this.globalMinX = findGlobalMin();
+    this.resetAnimation();
   }
 
   /** Re-render one frame on demand (e.g. theme change). */
