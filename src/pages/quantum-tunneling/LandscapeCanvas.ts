@@ -21,7 +21,7 @@ export class LandscapeCanvas {
   private frame = 0;
   private running = false;
 
-  private startX = 22;
+  private startX = 40;
   private showClassical = true;
   private showQuantum = true;
 
@@ -54,6 +54,7 @@ export class LandscapeCanvas {
   start(): void {
     if (this.running) return;
     this.running = true;
+    this.sizeCanvas();
     this.tick();
   }
 

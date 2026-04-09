@@ -15,14 +15,14 @@ export function createTunnelingControls(
 
   const sliderValue = document.createElement("span");
   sliderValue.className = "control-value";
-  sliderValue.textContent = "22";
+  sliderValue.textContent = "40";
 
   const slider = document.createElement("input");
   slider.type = "range";
   slider.min = "10";
   slider.max = "40";
   slider.step = "1";
-  slider.value = "22";
+  slider.value = "40";
   slider.setAttribute("aria-label", "Starting position");
 
   slider.addEventListener("input", () => {

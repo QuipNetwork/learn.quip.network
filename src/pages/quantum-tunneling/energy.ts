@@ -1,13 +1,13 @@
 export function E(x: number): number {
   const t = x - 20;
   return (
-    0.00012 * t ** 4 -
-    0.012 * t ** 3 +
-    0.35 * t ** 2 -
-    2.5 * t +
+    0.00015 * t ** 4 -
+    0.005 * t ** 3 +
+    0.15 * t ** 2 -
+    2.8 * t +
     45 +
-    8 * Math.sin(0.7 * x) -
-    3 * Math.cos(1.2 * x)
+    10 * Math.sin((Math.PI / 8) * x - (5 * Math.PI) / 4) -
+    1.2 * Math.cos(1.8 * x)
   );
 }
 

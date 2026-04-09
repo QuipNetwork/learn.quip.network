@@ -22,6 +22,17 @@ function section(
   return div;
 }
 
+function refItem(text: string, url: string): HTMLLIElement {
+  const li = document.createElement("li");
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.textContent = text;
+  li.append(a);
+  return li;
+}
+
 export function createTunnelingContent(): {
   intro: HTMLElement;
   sections: HTMLElement;
@@ -35,26 +46,27 @@ export function createTunnelingContent(): {
 
   introBody.append(
     p(
-      "Optimization is the mathematical backbone of financial " +
-        "decision-making: portfolio construction, risk allocation, " +
-        "trade execution, and regulatory capital management all reduce " +
-        "to finding the best solution within a space of constraints. " +
-        "Classical optimization algorithms follow the energy landscape " +
-        "downhill. Gradient descent moves in the direction of steepest " +
-        "descent. Simulated annealing adds random perturbations to " +
-        "escape shallow traps. Both methods fail when the landscape " +
-        "contains deep, narrow local minima separated by tall energy " +
-        "barriers from the global optimum.",
+      "Optimization problems are everywhere: scheduling airline " +
+        "crews, routing delivery vehicles, designing drug molecules, " +
+        "allocating resources across supply chains, and selecting " +
+        "investment portfolios all reduce to finding the best " +
+        "solution within a space of constraints. Classical " +
+        "optimization algorithms follow the energy landscape " +
+        "downhill. Gradient descent moves in the direction of " +
+        "steepest descent. Simulated annealing adds random " +
+        "perturbations to escape shallow traps. Both methods fail " +
+        "when the landscape contains deep, narrow local minima " +
+        "separated by tall energy barriers from the global optimum.",
     ),
     p(
       "Quantum tunneling is a physical phenomenon \u2014 not a " +
-        "metaphor \u2014 in which a quantum particle passes through an " +
-        "energy barrier that it lacks the energy to surmount " +
-        "classically. Quantum annealing hardware exploits this effect " +
-        "to find low-energy states that classical algorithms cannot " +
-        "reach. This page explains how tunneling works, visualizes it " +
-        "against a rugged optimization landscape, and connects it to " +
-        "financial portfolio optimization.",
+        "metaphor \u2014 in which a quantum particle passes through " +
+        "an energy barrier that it lacks the energy to surmount " +
+        "classically. Quantum annealing hardware exploits this " +
+        "effect to find low-energy states that classical algorithms " +
+        "cannot reach. This page explains how tunneling works, " +
+        "visualizes it against a rugged optimization landscape, and " +
+        "connects it to real-world combinatorial problems.",
     ),
   );
 
@@ -68,34 +80,39 @@ export function createTunnelingContent(): {
     section("Classical Optimization and the Local Minimum Trap", [
       "A combinatorial optimization problem defines an energy " +
         "function (also called a cost function or objective) over a " +
-        "discrete set of candidate solutions. Portfolio selection is a " +
-        "canonical example: given N assets, choose a subset that " +
-        "maximizes risk-adjusted return subject to budget, duration, " +
-        "and cardinality constraints. The solution space grows " +
-        "exponentially \u2014 2^N possible portfolios \u2014 and the " +
-        "energy landscape is typically rugged, with many local minima " +
-        "separated by high barriers.",
+        "discrete set of candidate solutions. The vehicle routing " +
+        "problem asks for the shortest set of routes serving all " +
+        "customers; protein folding seeks the lowest-energy 3D " +
+        "conformation; job-shop scheduling minimizes makespan across " +
+        "machines. In each case the solution space grows " +
+        "exponentially with problem size, and realistic " +
+        "constraints \u2014 vehicle capacity, amino acid chemistry, " +
+        "machine availability \u2014 transform a smooth surface into " +
+        "a rugged landscape with many local minima separated by " +
+        "high barriers.",
 
       "Gradient descent follows the local slope of the energy " +
-        "surface. At each step it moves to a neighboring solution with " +
-        "lower energy, and it stops when no neighbor improves the " +
-        "objective. This greedy strategy is fast but myopic: it " +
-        "converges to the nearest local minimum, which may be far from " +
-        "the global optimum. Simulated annealing improves on gradient " +
-        "descent by occasionally accepting uphill moves, with the " +
-        "probability of acceptance decreasing over time according to a " +
-        "cooling schedule. The method is provably convergent to the " +
-        "global optimum in the limit of infinitely slow cooling, but " +
-        "practical cooling schedules must be finite, and tall, narrow " +
-        "barriers can trap the solver for exponentially long times.",
+        "surface. At each step it moves to a neighboring solution " +
+        "with lower energy, and it stops when no neighbor improves " +
+        "the objective. This greedy strategy is fast but myopic: it " +
+        "converges to the nearest local minimum, which may be far " +
+        "from the global optimum. Simulated annealing improves on " +
+        "gradient descent by occasionally accepting uphill moves, " +
+        "with the probability of acceptance decreasing over time " +
+        "according to a cooling schedule. The method is provably " +
+        "convergent to the global optimum in the limit of " +
+        "infinitely slow cooling, but practical cooling schedules " +
+        "must be finite, and tall, narrow barriers can trap the " +
+        "solver for exponentially long times.",
 
       "The visualization below shows this failure mode directly. " +
         "The red path traces gradient descent on a rugged energy " +
-        "landscape. It rolls downhill and locks into a local minimum. " +
-        "The blue dashed path shows the quantum tunneling trajectory " +
-        "that passes through the barrier to reach the global optimum " +
-        "\u2014 a solution that the classical path cannot access " +
-        "without an exponentially unlikely thermal fluctuation.",
+        "landscape. It rolls downhill and locks into a local " +
+        "minimum. The blue dashed path shows the quantum tunneling " +
+        "trajectory that passes through the barrier to reach the " +
+        "global optimum \u2014 a solution that the classical path " +
+        "cannot access without an exponentially unlikely thermal " +
+        "fluctuation.",
     ]),
   );
 
@@ -147,75 +164,79 @@ export function createTunnelingContent(): {
       "Experimental Evidence for Quantum Tunneling Advantage",
       [
         "D-Wave Systems has published multiple studies " +
-          "demonstrating tunneling effects on their quantum annealing " +
-          "processors. In 2016, Denchev et al. showed that the D-Wave " +
-          "2X found the ground state of a carefully constructed " +
-          "problem \u2014 a weak-strong cluster network \u2014 up to " +
-          "10^8 times faster than simulated annealing, with the " +
-          "speedup attributable to multi-qubit tunneling through " +
-          "energy barriers. Subsequent work by King et al. (2023) " +
-          "demonstrated coherent quantum dynamics and tunneling on " +
-          "the Advantage2 processor, confirming that the hardware " +
-          "maintains sufficient quantum coherence for tunneling to " +
-          "play a computational role. Albash and Lidar (2018) provide " +
-          "a comprehensive review of quantum annealing theory and " +
-          "experiment, including the role of tunneling in " +
-          "computational speedups.",
+          "demonstrating tunneling effects on their quantum " +
+          "annealing processors. In 2016, Denchev et al. showed " +
+          "that the D-Wave 2X found the ground state of a " +
+          "carefully constructed problem \u2014 a weak-strong " +
+          "cluster network \u2014 up to 10^8 times faster than " +
+          "simulated annealing, with the speedup attributable to " +
+          "multi-qubit tunneling through energy barriers. King " +
+          "et al. (2025) demonstrated beyond-classical computation " +
+          "on frustrated spin glasses using the Advantage processor, " +
+          "published in Science. The QPU achieved median relative " +
+          "error below 1% while generating at least 1,000 samples " +
+          "per second, with classical simulation of the largest " +
+          "instances requiring computational resources exceeding " +
+          "annual global electricity consumption.",
 
-        "On the gate-model side, the QHDOPT package (Leng et al., " +
-          "2023) implements Quantum Hamiltonian Descent on Quantinuum " +
-          "trapped-ion hardware. Their experiments on non-convex " +
-          "portfolio optimization problems show QHD escaping local " +
-          "minima that trap classical gradient descent, with solution " +
-          "quality improving as circuit depth increases. Anduril " +
-          "Industries has demonstrated quantum optimization for " +
-          "defense logistics on D-Wave hardware, applying quantum " +
-          "annealing to real-world combinatorial problems with " +
-          "hundreds of variables and reporting solution quality " +
-          "competitive with classical solvers at a fraction of the " +
-          "wall-clock time.",
+        "On the gate-model side, the QHDOPT package (Leng " +
+          "et al., 2024) implements Quantum Hamiltonian Descent " +
+          "on trapped-ion hardware. Their experiments on " +
+          "non-convex optimization problems show QHD escaping " +
+          "local minima that trap classical gradient descent, with " +
+          "solution quality improving as circuit depth increases. " +
+          "At Qubits 2026, Anduril Industries and Davidson " +
+          "Technologies demonstrated hybrid quantum-classical " +
+          "optimization for Weapon-Target Assignment \u2014 an " +
+          "NP-hard problem \u2014 achieving 10\u00D7 faster " +
+          "time-to-solution and 9\u201312% improvement in " +
+          "objective value on D-Wave hardware.",
 
-        "These results share a pattern: the quantum advantage is " +
-          "largest when the energy landscape has tall, narrow barriers " +
-          "separating good solutions \u2014 exactly the structure " +
-          "found in constrained combinatorial optimization. Portfolio " +
-          "selection, with its budget and cardinality constraints, " +
-          "creates precisely this type of barrier-rich landscape. The " +
-          "constraints carve out a feasible region whose boundary " +
-          "forms sharp energy walls in the QUBO formulation, making " +
-          "tunneling the natural mechanism for moving between feasible " +
-          "basins.",
+        "These results share a pattern: the quantum advantage " +
+          "is largest when the energy landscape has tall, narrow " +
+          "barriers separating good solutions \u2014 exactly the " +
+          "structure found in constrained combinatorial " +
+          "optimization. Vehicle routing with capacity constraints, " +
+          "protein folding with steric clashes, chip placement " +
+          "with thermal limits, and resource allocation under " +
+          "budgets all create barrier-rich landscapes where " +
+          "tunneling is the natural mechanism for moving between " +
+          "feasible basins.",
       ],
     ),
   );
 
   // Section 4: Application to Financial Portfolio Optimization
   sections.append(
-    section("Application to Financial Portfolio Optimization", [
-      "Portfolio optimization in QUBO form encodes asset prices, " +
-        "durations, and scores into an energy function where the " +
-        "global minimum represents the best portfolio. Budget and " +
-        "cardinality constraints become quadratic penalty terms that " +
-        "create tall energy barriers between feasible regions. A " +
-        "portfolio that violates the budget constraint by a single " +
-        "asset swap may have much higher energy than either the " +
-        "current portfolio or the target, forming a barrier that " +
-        "classical algorithms must climb over. Quantum tunneling " +
-        "bypasses this barrier entirely, allowing the solver to move " +
-        "directly between feasible portfolios without traversing the " +
-        "infeasible intermediate states.",
+    section("Applications Across Industries", [
+      "Any optimization problem formulated as a QUBO or Ising " +
+        "model encodes its constraints as energy penalties, and " +
+        "those penalties create the tall barriers that tunneling " +
+        "exploits. In logistics, vehicle routing with time windows " +
+        "and capacity limits creates sharp feasibility boundaries " +
+        "\u2014 swapping one stop between routes can violate " +
+        "multiple constraints simultaneously, forming a barrier " +
+        "that classical solvers must climb over. In drug discovery, " +
+        "molecular conformation search over rotatable bonds " +
+        "produces energy landscapes with exponentially many local " +
+        "minima separated by steric clashes. In finance, portfolio " +
+        "selection under budget, sector, and cardinality " +
+        "constraints creates the same barrier-rich structure.",
 
-      "The practical implication is that quantum annealing and " +
-        "QHD-based approaches can find better portfolios in less " +
-        "time when the constraint structure creates rugged landscapes. " +
-        "As quantum hardware scales \u2014 D-Wave\u2019s Advantage2 " +
-        "processor has over 1,200 qubits with 20-way connectivity " +
-        "\u2014 the size of tractable portfolio problems grows " +
-        "correspondingly. The combination of native inequality " +
-        "constraints (via CQM), improved coherence times, and " +
-        "higher connectivity makes financial optimization one of the " +
-        "nearest-term applications where quantum tunneling provides a " +
-        "measurable advantage over classical methods.",
+      "Hybrid quantum-classical solvers address these problems " +
+        "by using classical heuristics to identify promising " +
+        "regions and quantum sub-problem solving to tunnel through " +
+        "barriers within those regions. D-Wave\u2019s Constrained " +
+        "Quadratic Model (CQM) interface supports up to 2 million " +
+        "variables with native equality and inequality constraints, " +
+        "and applications already span semiconductor manufacturing " +
+        "(fab scheduling), telecommunications (network " +
+        "optimization), defense (weapon-target assignment), and " +
+        "materials science (lattice structure prediction). As " +
+        "quantum hardware scales \u2014 the Advantage2 processor " +
+        "has over 1,200 qubits with 20-way connectivity \u2014 " +
+        "the class of tractable constrained problems grows " +
+        "correspondingly.",
     ]),
   );
 
@@ -229,58 +250,80 @@ export function createTunnelingContent(): {
 
   const ol = document.createElement("ol");
 
-  const refs = [
-    "Kadowaki, T. & Nishimori, H. (1998). Quantum annealing in " +
-      "the transverse Ising model. Physical Review E, 58(5), " +
-      "5355\u20135363.",
-
-    "Farhi, E., Goldstone, J., Gutmann, S., & Sipser, M. (2000). " +
-      "Quantum computation by adiabatic evolution. arXiv:quant-ph/" +
-      "0001106.",
-
-    "Denchev, V. S. et al. (2016). What is the computational " +
-      "value of finite-range tunneling? Physical Review X, 6(3), " +
-      "031015.",
-
-    "Albash, T. & Lidar, D. A. (2018). Adiabatic quantum " +
-      "computation. Reviews of Modern Physics, 90(1), 015002.",
-
-    "Leng, J. et al. (2023). Quantum Hamiltonian Descent. " +
-      "arXiv:2303.01471.",
-
-    "Leng, J. et al. (2023). QHDOPT: Quantum Hamiltonian Descent " +
-      "Optimization. arXiv:2309.03859.",
-
-    "King, A. D. et al. (2023). Quantum critical dynamics in a " +
-      "5,000-qubit programmable spin glass. Nature, 617, 61\u201366.",
-
-    "Pho Le (2024). QUBO Matrix Construction for Portfolio " +
-      "Optimization. QUIP Network.",
-
-    "McGeoch, C. C. & Wang, C. (2013). Experimental evaluation of " +
-      "an adiabatic quantum system for combinatorial optimization. " +
-      "CF \u201913, ACM.",
-
-    "Mugel, S. et al. (2022). Dynamic portfolio optimization with " +
-      "real datasets using quantum processors and quantum-inspired " +
-      "tensor networks. Physical Review Research, 4(1), 013006.",
-
-    "Herman, D. et al. (2023). Quantum computing for finance. " +
-      "Nature Reviews Physics, 5, 450\u2013465.",
-
-    "Anduril Industries (2024). Quantum optimization for defense " +
-      "logistics. Technical report.",
-
-    "Harrigan, M. P. et al. (2021). Quantum approximate " +
-      "optimization of non-planar graph problems on a planar " +
-      "superconducting processor. Nature Physics, 17, 332\u2013336.",
-  ];
-
-  for (const ref of refs) {
-    const li = document.createElement("li");
-    li.textContent = ref;
-    ol.append(li);
-  }
+  ol.append(
+    refItem(
+      "Kadowaki, T. & Nishimori, H. (1998). Quantum annealing " +
+        "in the transverse Ising model. Physical Review E, 58(5), " +
+        "5355\u20135363.",
+      "https://doi.org/10.1103/PhysRevE.58.5355",
+    ),
+    refItem(
+      "Kirkpatrick, S., Gelatt, C.D., Vecchi, M.P. (1983). " +
+        "Optimization by Simulated Annealing. Science, " +
+        "220(4598), 671\u2013680.",
+      "https://doi.org/10.1126/science.220.4598.671",
+    ),
+    refItem(
+      "Denchev, V. S. et al. (2016). What is the computational " +
+        "value of finite-range tunneling? Physical Review X, " +
+        "6(3), 031015.",
+      "https://doi.org/10.1103/PhysRevX.6.031015",
+    ),
+    refItem(
+      "Albash, T. & Lidar, D. A. (2018). Adiabatic quantum " +
+        "computation. Reviews of Modern Physics, 90(1), 015002.",
+      "https://doi.org/10.1103/RevModPhys.90.015002",
+    ),
+    refItem(
+      "Leng, J. et al. (2023). Quantum Hamiltonian Descent. " +
+        "arXiv:2303.01471.",
+      "https://arxiv.org/abs/2303.01471",
+    ),
+    refItem(
+      "Leng, J. et al. (2024). QHDOPT: A Software for " +
+        "Nonlinear Optimization with QHD. INFORMS Journal on " +
+        "Computing, 37(1), 107\u2013124.",
+      "https://pubsonline.informs.org/doi/10.1287/ijoc.2024.0587",
+    ),
+    refItem(
+      "King, A. D. et al. (2025). Beyond-classical computation " +
+        "in quantum simulation. Science, 388(6743), 199\u2013204.",
+      "https://arxiv.org/abs/2403.00910",
+    ),
+    refItem(
+      "Gamow, G. (1928). Zur Quantentheorie des Atomkernes. " +
+        "Zeitschrift f\u00FCr Physik, 51(3\u20134), 204\u2013212.",
+      "https://doi.org/10.1007/BF01343196",
+    ),
+    refItem(
+      "Anduril, Davidson, D-Wave (2026). Quantum Emplacement " +
+        "for Air and Missile Defense Systems. Qubits 2026.",
+      "https://www.youtube.com/watch?v=Ac5u3bVFMac",
+    ),
+    refItem(
+      "D-Wave (2026). Anduril, Davidson and D-Wave Collaborate " +
+        "for US Air and Missile Defense. Press Release.",
+      "https://www.dwavequantum.com/company/newsroom/press-release/" +
+        "anduril-davidson-and-d-wave-collaborate-to-develop-" +
+        "quantum-applications-for-us-air-and-missile-defense/",
+    ),
+    refItem(
+      "D-Wave documentation: Models (CQM, NL Solver).",
+      "https://docs.dwavequantum.com/en/latest/concepts/models.html",
+    ),
+    refItem(
+      "Mugel, S. et al. (2022). Dynamic portfolio optimization " +
+        "with real datasets using quantum processors. Physical " +
+        "Review Research, 4, 013006.",
+      "https://doi.org/10.1103/PhysRevResearch.4.013006",
+    ),
+    refItem(
+      "Harrigan, M. P. et al. (2021). Quantum approximate " +
+        "optimization of non-planar graph problems. Nature " +
+        "Physics, 17, 332\u2013336.",
+      "https://doi.org/10.1038/s41567-020-01105-y",
+    ),
+  );
 
   citations.append(ol);
 
