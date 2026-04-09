@@ -12,7 +12,7 @@ export function mountNonlinear(container: HTMLElement): () => void {
 
   // 0: title, 1: subtitle, 2: intro, 3: whatIsTitle, 4: whatIsBody,
   // 5: domainsTitle, 6: domainsBody,
-  // 7: costTitle, 8: costBody, 9: appTitle, 10: appBody, 11: citations
+  // 7: costTitle, 8: costBody, 9: citations
   const preSections = children.slice(0, 7);
   const postSections = children.slice(7);
 

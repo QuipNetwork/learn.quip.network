@@ -217,38 +217,6 @@ export function createNonlinearContent(): HTMLElement {
     ),
   );
 
-  // --- Application Areas ---
-  const appTitle = sectionTitle("Application to Financial Analysis");
-  const appBody = sectionBody(
-    p(
-      "Quantum algorithms for financial simulation encode non-linear " +
-        "dynamics into Hamiltonian evolution operators. Quantum " +
-        "amplitude estimation can price path-dependent derivatives " +
-        "with quadratic speedup over classical Monte Carlo. For " +
-        "portfolio optimization, variational quantum eigensolvers map " +
-        "the non-linear objective function to a qubit Hamiltonian " +
-        "whose ground state encodes the optimal allocation. Takaishi " +
-        "demonstrated that single-qubit quantum circuit learning " +
-        "preserves the negative return\u2013volatility correlation " +
-        "and multifractal structure in GARCH volatility modeling " +
-        "\u2014 features that classical implementations struggle to " +
-        "capture [9].",
-    ),
-    p(
-      "The critical insight is that quantum advantage may be " +
-        "regime-dependent: comparable to classical methods under " +
-        "normal conditions, but superior during crises when " +
-        "non-linear couplings dominate. The interactive visualization " +
-        "above demonstrates this directly: at low coupling, the " +
-        "signals are indistinguishable from a linear model; at high " +
-        "coupling with perturbation, the non-linear cascading effects " +
-        "become dramatic and unpredictable by linear extrapolation. " +
-        "The same principle applies to climate tipping points, " +
-        "epidemic phase transitions, and any system where non-linear " +
-        "coupling activates under stress.",
-    ),
-  );
-
   // --- Citations ---
   const citations = document.createElement("div");
   citations.className = "citations";
@@ -258,38 +226,62 @@ export function createNonlinearContent(): HTMLElement {
   citations.append(citTitle);
 
   const ol = document.createElement("ol");
-  const refs = [
-    "Lorenz, E.N. (1963). Deterministic nonperiodic flow. " +
-      "Journal of the Atmospheric Sciences, 20(2), 130\u2013141.",
-    "Alon, U. (2007). An Introduction to Systems Biology: " +
-      "Design Principles of Biological Circuits. Chapman & Hall/CRC.",
-    "Feynman, R. (1982). Simulating physics with computers. " +
-      "International Journal of Theoretical Physics, 21(6/7), " +
-      "467\u2013488.",
-    "Li, D.X. (2000). On Default Correlation: A Copula Function " +
-      "Approach. Journal of Fixed Income, 9(4), 43\u201354.",
-    "Salmon, F. (2009). Recipe for Disaster: The Formula That " +
-      "Killed Wall Street. Wired. " +
-      "https://www.wired.com/2009/02/wp-quant/",
-    "Or\u00FAs, R., Mugel, S., & Lizaso, E. (2019). Forecasting " +
-      "financial crashes with quantum computing. Physical Review A, " +
-      "99, 060301(R). https://arxiv.org/abs/1810.07690",
-    "Farhi, E., Goldstone, J., & Gutmann, S. (2014). A Quantum " +
-      "Approximate Optimization Algorithm. " +
-      "https://arxiv.org/abs/1411.4028",
-    "Kadowaki, T. & Nishimori, H. (1998). Quantum annealing in " +
-      "the transverse Ising model. Physical Review E, 58(5), 5355.",
-    "Takaishi, T. (2025). Volatility time series modeling by " +
-      "single-qubit quantum circuit learning. " +
-      "https://arxiv.org/abs/2512.10584",
-    "Cont, R. & Bouchaud, J.-P. (2000). Herd behavior and " +
-      "aggregate fluctuations in financial markets. Macroeconomic " +
-      "Dynamics, 4(2), 170\u2013196.",
+  const refs: Array<{ text: string; url?: string }> = [
+    {
+      text: "Lorenz, E.N. (1963). Deterministic nonperiodic flow. " +
+        "Journal of the Atmospheric Sciences, 20(2), 130\u2013141.",
+      url: "https://doi.org/10.1175/1520-0469(1963)020<0130:DNF>2.0.CO;2",
+    },
+    {
+      text: "Alon, U. (2007). An Introduction to Systems Biology: " +
+        "Design Principles of Biological Circuits. Chapman & Hall/CRC.",
+      url: "https://doi.org/10.1201/9781420011432",
+    },
+    {
+      text: "Feynman, R. (1982). Simulating physics with computers. " +
+        "International Journal of Theoretical Physics, 21(6/7), " +
+        "467\u2013488.",
+      url: "https://doi.org/10.1007/BF02650179",
+    },
+    {
+      text: "Li, D.X. (2000). On Default Correlation: A Copula " +
+        "Function Approach. Journal of Fixed Income, 9(4), 43\u201354.",
+    },
+    {
+      text: "Salmon, F. (2009). Recipe for Disaster: The Formula " +
+        "That Killed Wall Street. Wired.",
+      url: "https://www.wired.com/2009/02/wp-quant/",
+    },
+    {
+      text: "Or\u00FAs, R., Mugel, S., & Lizaso, E. (2019). " +
+        "Forecasting financial crashes with quantum computing. " +
+        "Physical Review A, 99, 060301(R).",
+      url: "https://arxiv.org/abs/1810.07690",
+    },
+    {
+      text: "Farhi, E., Goldstone, J., & Gutmann, S. (2014). A " +
+        "Quantum Approximate Optimization Algorithm.",
+      url: "https://arxiv.org/abs/1411.4028",
+    },
+    {
+      text: "Kadowaki, T. & Nishimori, H. (1998). Quantum " +
+        "annealing in the transverse Ising model. Physical Review E, " +
+        "58(5), 5355.",
+      url: "https://doi.org/10.1103/PhysRevE.58.5355",
+    },
   ];
 
   for (const ref of refs) {
     const li = document.createElement("li");
-    li.textContent = ref;
+    li.append(document.createTextNode(ref.text + " "));
+    if (ref.url) {
+      const a = document.createElement("a");
+      a.href = ref.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = ref.url;
+      li.append(a);
+    }
     ol.append(li);
   }
   citations.append(ol);
@@ -304,8 +296,6 @@ export function createNonlinearContent(): HTMLElement {
     domainsBody,
     costTitle,
     costBody,
-    appTitle,
-    appBody,
     citations,
   );
 
