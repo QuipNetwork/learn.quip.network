@@ -80,7 +80,7 @@ interface Scenario {
 
 const SCENARIOS: Scenario[] = [
   {
-    label: "Normal conditions",
+    label: "Predictable conditions",
     coupling: 0,
     perturbation: 0,
     signals: [0, 0, 0, 0],
