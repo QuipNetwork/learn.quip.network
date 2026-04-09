@@ -86,8 +86,8 @@ const SCENARIOS: Scenario[] = [
   },
   {
     label: "Volatility",
-    couplingAB: 100, couplingBA: 40,
-    perturbation: -50, perturbA: 80, perturbB: -80, phaseB: 137,
+    couplingAB: 60, couplingBA: 35,
+    perturbation: -50, perturbA: 20, perturbB: -30, phaseB: 137,
   },
 ];
 
