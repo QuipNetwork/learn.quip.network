@@ -29,6 +29,7 @@ export class WaveformCanvas {
   private coupling: number = 0;
   private perturbation: number = 0;
   private signalPerturbations: number[] = [0, 0, 0, 0];
+  private updateInterval: number = 0;
   private dpr: number;
   private resizeObserver: ResizeObserver;
   private gridCanvas: SignalGridCanvas | null = null;
@@ -96,6 +97,14 @@ export class WaveformCanvas {
     if (index >= 0 && index < this.signalPerturbations.length) {
       this.signalPerturbations[index] = v;
     }
+  }
+
+  setUpdateInterval(v: number): void {
+    this.updateInterval = v;
+  }
+
+  getUpdateInterval(): number {
+    return this.updateInterval;
   }
 
   computeYForWaveform(wf: WaveformConfig, x: number): number {
@@ -215,75 +224,107 @@ const LABEL_H = 20;
 // for the sinusoidal fit to resolve the frequency.
 const MIN_CYCLES = 1.5;
 
-// Least-squares sinusoidal fit using a centered window.
-// Fits y = a*sin(ωt) + b*cos(ωt) + c to nearby samples,
-// producing predictions from the very first point.
+// Fit y = a*sin(ωx) + b*cos(ωx) + c to samples in [lo, hi].
+// Returns coefficients {a, b, c} or null if under-determined.
+function fitSinusoid(
+  values: number[],
+  lo: number,
+  hi: number,
+  freq: number,
+  xPerStep: number,
+): { a: number; b: number; c: number } | null {
+  const count = hi - lo + 1;
+  if (count < 3) return null;
+
+  let ss = 0, sc = 0, s1 = 0;
+  let sss = 0, ssc = 0, scc = 0;
+  let sy = 0, sys = 0, syc = 0;
+  for (let j = lo; j <= hi; j++) {
+    const x = j * xPerStep;
+    const sv = Math.sin(freq * x);
+    const cv = Math.cos(freq * x);
+    const yj = values[j] ?? 0;
+    ss += sv;
+    sc += cv;
+    s1 += 1;
+    sss += sv * sv;
+    ssc += sv * cv;
+    scc += cv * cv;
+    sy += yj;
+    sys += yj * sv;
+    syc += yj * cv;
+  }
+
+  const det =
+    sss * (scc * s1 - sc * sc) -
+    ssc * (ssc * s1 - sc * ss) +
+    ss * (ssc * sc - scc * ss);
+  if (Math.abs(det) < 1e-10) return null;
+
+  return {
+    a: (sys * (scc * s1 - sc * sc) -
+        ssc * (syc * s1 - sc * sy) +
+        ss * (syc * sc - scc * sy)) / det,
+    b: (sss * (syc * s1 - sc * sy) -
+        sys * (ssc * s1 - sc * ss) +
+        ss * (ssc * sy - syc * ss)) / det,
+    c: (sss * (scc * sy - sc * syc) -
+        ssc * (ssc * sy - sc * sys) +
+        sys * (ssc * sc - scc * ss)) / det,
+  };
+}
+
+// Sinusoidal prediction with discrete update intervals.
+// The model fits at the start of each segment and extrapolates
+// its stale coefficients until the next update — simulating a
+// model retrained periodically (e.g., daily or hourly).
+// updateInterval = 0 means continuous (fit at every point).
 function sinusoidalPredict(
   values: number[],
   win: number,
   freq: number,
   xPerStep: number,
+  updateInterval: number,
 ): number[] {
   const n = values.length;
   const half = Math.floor(win / 2);
   const out: number[] = [];
+
+  // Continuous mode: fit centered window at every point
+  if (updateInterval <= 0) {
+    for (let i = 0; i < n; i++) {
+      const lo = Math.max(0, i - half);
+      const hi = Math.min(n - 1, i + half);
+      const fit = fitSinusoid(values, lo, hi, freq, xPerStep);
+      if (!fit) {
+        out.push(values[i] ?? 0);
+        continue;
+      }
+      const x = i * xPerStep;
+      out.push(fit.a * Math.sin(freq * x) + fit.b * Math.cos(freq * x) + fit.c);
+    }
+    return out;
+  }
+
+  // Discrete update mode: fit once per segment, extrapolate between
+  let currentFit: { a: number; b: number; c: number } | null = null;
   for (let i = 0; i < n; i++) {
-    // Centered window: clamp to array bounds
-    const lo = Math.max(0, i - half);
-    const hi = Math.min(n - 1, i + half);
-    const count = hi - lo + 1;
-
-    let ss = 0, sc = 0, s1 = 0;
-    let sss = 0, ssc = 0, scc = 0;
-    let sy = 0, sys = 0, syc = 0;
-    for (let j = lo; j <= hi; j++) {
-      const x = j * xPerStep;
-      const sv = Math.sin(freq * x);
-      const cv = Math.cos(freq * x);
-      const yj = values[j] ?? 0;
-      ss += sv;
-      sc += cv;
-      s1 += 1;
-      sss += sv * sv;
-      ssc += sv * cv;
-      scc += cv * cv;
-      sy += yj;
-      sys += yj * sv;
-      syc += yj * cv;
+    if (i % updateInterval === 0) {
+      // Retrain: use samples up to this point (trailing window)
+      const fitHi = i;
+      const fitLo = Math.max(0, fitHi - win);
+      currentFit = fitSinusoid(values, fitLo, fitHi, freq, xPerStep);
     }
-
-    if (count < 3) {
+    if (!currentFit) {
       out.push(values[i] ?? 0);
       continue;
     }
-
-    const det =
-      sss * (scc * s1 - sc * sc) -
-      ssc * (ssc * s1 - sc * ss) +
-      ss * (ssc * sc - scc * ss);
-    if (Math.abs(det) < 1e-10) {
-      out.push(values[i] ?? 0);
-      continue;
-    }
-    const a =
-      (sys * (scc * s1 - sc * sc) -
-        ssc * (syc * s1 - sc * sy) +
-        ss * (syc * sc - scc * sy)) /
-      det;
-    const b =
-      (sss * (syc * s1 - sc * sy) -
-        sys * (ssc * s1 - sc * ss) +
-        ss * (ssc * sy - syc * ss)) /
-      det;
-    const c =
-      (sss * (scc * sy - sc * syc) -
-        ssc * (ssc * sy - sc * sys) +
-        sys * (ssc * sc - scc * ss)) /
-      det;
-
-    // Predict at position i
-    const xPred = i * xPerStep;
-    out.push(a * Math.sin(freq * xPred) + b * Math.cos(freq * xPred) + c);
+    const x = i * xPerStep;
+    out.push(
+      currentFit.a * Math.sin(freq * x) +
+      currentFit.b * Math.cos(freq * x) +
+      currentFit.c,
+    );
   }
   return out;
 }
@@ -413,7 +454,9 @@ export class SignalGridCanvas {
       steps,
       Math.max(40, Math.ceil(wavelengthInSteps * MIN_CYCLES)),
     );
-    const predicted = sinusoidalPredict(actual, win, wf.freq, xPerStep);
+    const predicted = sinusoidalPredict(
+      actual, win, wf.freq, xPerStep, this.source.getUpdateInterval(),
+    );
 
     // Draw linear prediction (dashed, behind)
     this.ctx.save();

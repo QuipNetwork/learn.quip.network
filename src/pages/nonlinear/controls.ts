@@ -182,7 +182,21 @@ export function createControls(canvas: WaveformCanvas): HTMLElement {
   });
   sliderRefs.perturbation = perturb.ref;
 
-  globalRow.append(coupling.el, perturb.el);
+  const UPDATE_LABELS = [
+    "Continuous", "1 hour", "6 hours", "12 hours", "1 day", "1 week",
+  ];
+  const UPDATE_STEPS = [0, 15, 30, 50, 80, 150];
+
+  const updateFreq = createSlider({
+    label: "Model update frequency",
+    min: 0,
+    max: UPDATE_LABELS.length - 1,
+    value: 0,
+    formatValue: (v) => UPDATE_LABELS[v] ?? "Continuous",
+    onChange: (v) => canvas.setUpdateInterval(UPDATE_STEPS[v] ?? 0),
+  });
+
+  globalRow.append(coupling.el, perturb.el, updateFreq.el);
 
   // Per-signal controls
   const signalRow = document.createElement("div");

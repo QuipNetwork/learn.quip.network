@@ -47,12 +47,14 @@ export function mountNonlinear(container: HTMLElement): () => void {
     "margin-bottom:var(--spacing-sm);line-height:1.5";
   gridCaption.textContent =
     "The dashed line is a least-squares sinusoidal fit " +
-    "(y = a\u00B7sin(\u03C9t) + b\u00B7cos(\u03C9t) + c) trained on " +
-    "a trailing window of each signal. Under normal conditions it " +
+    "(y = a\u00B7sin(\u03C9t) + b\u00B7cos(\u03C9t) + c) retrained " +
+    "at a configurable interval. Under predictable conditions it " +
     "tracks almost perfectly. As coupling increases, non-linear " +
     "harmonics and amplitude modulation appear that a single-" +
-    "frequency model cannot capture \u2014 the prediction diverges " +
-    "from reality.";
+    "frequency model cannot capture. Increase the update interval " +
+    "to simulate a model retrained hourly or daily \u2014 between " +
+    "updates, the prediction is a stale extrapolation that drifts " +
+    "further from reality as non-linear effects accumulate.";
 
   const gridContainer = document.createElement("div");
   gridContainer.className = "viz-container";
