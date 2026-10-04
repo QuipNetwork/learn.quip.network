@@ -18,6 +18,23 @@
   height: auto;
 }
 
+/* Reserve the dimensions used by the existing canvas and SVG renderers. */
+.nonlinear-page .viz-container {
+  min-height: 262px;
+}
+
+.nonlinear-page .viz-container:last-of-type {
+  min-height: 202px;
+}
+
+.correlations-page .viz-container {
+  aspect-ratio: 1;
+}
+
+.tunneling-page .viz-container {
+  min-height: 302px;
+}
+
 .viz-aria-live {
   position: absolute;
   width: 1px;

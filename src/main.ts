@@ -5,8 +5,7 @@ import "./styles/typography.css";
 import "./styles/controls.css";
 import "./styles/visualization.css";
 
-import { initTheme } from "./lib/dark-mode";
-import { createLayout } from "./layout";
+import { initTheme, isDark, toggleTheme } from "./lib/dark-mode";
 import { registerRoutes } from "./router";
 import { mountHome } from "./pages/home/index";
 import { mountNonlinear } from "./pages/nonlinear/index";
@@ -15,8 +14,15 @@ import { mountQuantumTunneling } from "./pages/quantum-tunneling/index";
 
 initTheme();
 
-const app = document.getElementById("app")!;
-const content = createLayout(app);
+const toggle = document.querySelector<HTMLButtonElement>(".theme-toggle")!;
+toggle.hidden = false;
+toggle.textContent = isDark() ? "☀️" : "🌙";
+toggle.addEventListener("click", () => {
+  toggleTheme();
+  toggle.textContent = isDark() ? "☀️" : "🌙";
+});
+
+const content = document.getElementById("page-content")!;
 
 registerRoutes(content, [
   { path: "/", mount: mountHome },

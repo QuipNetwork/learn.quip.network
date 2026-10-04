@@ -1,28 +1,14 @@
-import { createCorrelationsContent } from "./content";
+import content from "./content.html?raw";
 import { EDGES } from "./data";
 import { createNetworkSVG } from "./NetworkGraph";
 import { PropagationAnimator } from "./Propagation";
 
-export function mountHiddenCorrelations(
-  container: HTMLElement,
-): () => void {
-  const page = document.createElement("div");
-  page.className = "correlations-page";
-
-  const { intro, sections, citations } = createCorrelationsContent();
-
-  // 1. Intro
-  page.append(intro);
-
-  // 2. "What Are Indirect Correlations?" section
-  page.append(sections.indirectCorrelations);
-
-  // 3. "The GPU Supply Chain" section
-  page.append(sections.gpuSupplyChain);
-
-  // 4. Visualization
-  const vizContainer = document.createElement("div");
-  vizContainer.className = "viz-container";
+export function mountHiddenCorrelations(container: HTMLElement): () => void {
+  if (!container.querySelector(".correlations-page")) {
+    container.insertAdjacentHTML("beforeend", content);
+  }
+  const demo = container.querySelector<HTMLElement>('[data-demo="hidden-correlations"]')!;
+  const vizContainer = demo.querySelector<HTMLElement>(".viz-container")!;
 
   const svg = createNetworkSVG(vizContainer);
   const animator = new PropagationAnimator(svg, EDGES);
@@ -54,15 +40,8 @@ export function mountHiddenCorrelations(
 
   controls.append(btnPropagate, btnReset);
 
-  page.append(controls, vizContainer, ariaLive);
-
-  // 5. "How Quantum Systems Model" section
-  page.append(sections.quantumSystems);
-
-  // 6. Citations
-  page.append(citations);
-
-  container.append(page);
+  demo.querySelector(".viz-controls-slot")!.replaceChildren(controls);
+  demo.append(ariaLive);
 
   // Cleanup
   return () => {

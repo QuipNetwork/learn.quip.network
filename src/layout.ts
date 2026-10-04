@@ -1,71 +1,67 @@
-import { isDark, toggleTheme } from "./lib/dark-mode";
+import { siteUrl } from "./site";
+import type { Page } from "./site";
 
-function el(
-  tag: string,
-  attrs: Record<string, string>,
-  ...children: Array<string | Node>
-): HTMLElement {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
-  for (const c of children) {
-    node.append(typeof c === "string" ? document.createTextNode(c) : c);
-  }
-  return node;
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
-function navLink(href: string, text: string): HTMLAnchorElement {
-  const a = document.createElement("a");
-  a.href = href;
-  a.setAttribute("data-link", "");
-  a.textContent = text;
-  return a;
+export function renderHead(page: Page): string {
+  const canonical = siteUrl + page.path;
+  const data =
+    page.path === "/"
+      ? {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "QUIP Research",
+          url: canonical,
+        }
+      : {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: siteUrl + "/" },
+            { "@type": "ListItem", position: 2, name: page.label, item: canonical },
+          ],
+        };
+  return `
+    <title data-seo>${escapeHtml(page.title)}</title>
+    <meta data-seo name="description" content="${escapeHtml(page.description)}">
+    <link data-seo rel="canonical" href="${escapeHtml(canonical)}">
+    ${page.noindex ? '<meta data-seo name="robots" content="noindex">' : `<script data-seo type="application/ld+json">${JSON.stringify(data).replaceAll("<", "\\u003c")}</script>`}
+  `;
 }
 
-export function createLayout(app: HTMLElement): HTMLElement {
-  // Header
-  const header = el("header", { class: "site-header" });
-  const headerInner = el("div", { class: "site-header-inner" });
-  const logo = navLink("/", "QUIP Research");
-  logo.className = "site-logo";
+export function renderBreadcrumbs(page: Page): string {
+  if (page.path === "/" || page.noindex) return "";
+  return `<nav class="breadcrumbs" aria-label="Breadcrumb"><ol>
+    <li><a href="/" data-link>Home</a></li>
+    <li aria-current="page">${escapeHtml(page.label)}</li>
+  </ol></nav>`;
+}
 
-  const nav = el("nav", { class: "site-nav" },
-    navLink("/nonlinear", "Non-Linear"),
-    navLink("/hidden-correlations", "Hidden Correlations"),
-    navLink("/quantum-tunneling", "Quantum Tunneling"),
-  );
-
-  const toggle = el("button", {
-    class: "theme-toggle",
-    "aria-label": "Toggle dark mode",
-  }, isDark() ? "\u2600\uFE0F" : "\uD83C\uDF19");
-
-  toggle.addEventListener("click", () => {
-    toggleTheme();
-    toggle.textContent = isDark() ? "\u2600\uFE0F" : "\uD83C\uDF19";
-  });
-
-  nav.append(toggle);
-  headerInner.append(logo, nav);
-  header.append(headerInner);
-
-  // Main content
-  const main = document.createElement("main");
-  main.id = "page-content";
-
-  // Footer
-  const footer = el("footer", { class: "site-footer" });
-  const footerInner = el("div", { class: "site-footer-inner" });
-  const copy = el("span", {},
-    `\u00A9 ${new Date().getFullYear()} QUIP Network`,
-  );
-  const footerLinks = el("div", { class: "footer-links" },
-    navLink("/nonlinear", "Non-Linear"),
-    navLink("/hidden-correlations", "Correlations"),
-    navLink("/quantum-tunneling", "Tunneling"),
-  );
-  footerInner.append(copy, footerLinks);
-  footer.append(footerInner);
-
-  app.append(header, main, footer);
-  return main;
+export function renderLayout(page: Page, content: string): string {
+  return `
+    <header class="site-header"><div class="site-header-inner">
+      <a href="/" data-link class="site-logo">QUIP Research</a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="/nonlinear" data-link>Non-Linear</a>
+        <a href="/hidden-correlations" data-link>Hidden Correlations</a>
+        <a href="/quantum-tunneling" data-link>Quantum Tunneling</a>
+        <button class="theme-toggle" aria-label="Toggle dark mode" hidden>🌙</button>
+      </nav>
+    </div></header>
+    <main id="page-content">${renderBreadcrumbs(page)}${content}</main>
+    <footer class="site-footer"><div class="site-footer-inner">
+      <span>© ${new Date().getFullYear()} QUIP Network</span>
+      <div class="footer-links">
+        <a href="/nonlinear" data-link>Non-Linear</a>
+        <a href="/hidden-correlations" data-link>Correlations</a>
+        <a href="/quantum-tunneling" data-link>Tunneling</a>
+      </div>
+    </div></footer>
+  `;
 }

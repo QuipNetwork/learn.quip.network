@@ -5,3 +5,8 @@ dist/
 .netlify/
 .vite/
 bun.lock
+.beads/
+.beads-*/
+.beads-credential-key
+.dolt/
+CLAUDE.md

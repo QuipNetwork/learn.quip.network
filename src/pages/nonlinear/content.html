@@ -1,0 +1,439 @@
+<div class="nonlinear-page">
+  <h1 class="page-title">Non-Linear Relationships in Complex Systems</h1>
+  <p class="page-subtitle">
+    Why linear models break down in coupled systems, and what quantum computers offer
+  </p>
+  <div class="section-body">
+    <p>
+      A linear relationship means that a change in one variable produces a proportional change in
+      another: double the input, double the output. Most real-world systems violate this assumption.
+      Weather patterns, biological networks, financial markets, and particle interactions all
+      exhibit non-linear coupling where small perturbations can cascade into dramatic,
+      disproportionate effects. When multiple non-linear variables interact, the combined system
+      diverges sharply from any linear approximation — and the computational cost of modeling these
+      interactions grows exponentially.
+    </p>
+    <p>
+      This page illustrates what non-linearity looks like in coupled systems, explains why modeling
+      it is computationally intractable for classical hardware, and describes how quantum systems
+      address this through superposition and entanglement. The interactive visualization uses
+      coupled waveforms as a concrete example, but the underlying dynamics apply to any domain with
+      coupled non-linear variables.
+    </p>
+  </div>
+  <h2 class="section-title">What Is a Non-Linear Relationship?</h2>
+  <div class="section-body">
+    <p>
+      A function f is linear if f(ax + by) = af(x) + bf(y). Any function that violates this property
+      is non-linear. In a linear system, the combined effect of two inputs equals the sum of their
+      individual effects. In a non-linear system, inputs interact: the effect of A depends on the
+      current state of B. This coupling means the system cannot be decomposed into independent parts
+      and analyzed separately.
+    </p>
+    <p>
+      The visualization below uses coupled waveforms as an analogy. Each wave represents a variable
+      in a coupled system. When coupling is zero, each wave evolves independently and the system is
+      linear — the combined result is a predictable superposition. As coupling increases, each
+      wave’s behavior depends on the square of the driving signal, creating feedback loops where
+      small phase shifts produce constructive interference (amplification by orders of magnitude) or
+      destructive interference (amplitude collapse). The perturbation control adds an external
+      shock, analogous to a sudden stimulus that propagates non-linearly through the system.
+    </p>
+    <figure
+      style="
+        margin: var(--spacing-lg) 0;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      "
+    >
+      <img
+        src="/nonlinear-dynamics.webp"
+        alt="Diagram comparing linear regime (independent superposition, predictable sum) with non-linear regime (coupled interactions producing constructive amplification or destructive collapse)"
+        style="width: 100%; display: block"
+        width="1408"
+        height="768"
+        loading="lazy"
+        decoding="async"
+      />
+      <figcaption
+        style="
+          font-size: 0.8125rem;
+          color: var(--color-text-secondary);
+          padding: var(--spacing-sm) var(--spacing-md);
+          background: var(--color-card);
+        "
+      >
+        Linear regime: waveforms combine predictably via superposition. Non-linear regime: coupling
+        between signals produces amplification or collapse depending on phase relationships.
+      </figcaption>
+    </figure>
+  </div>
+  <h2 class="section-title">Where Non-Linearity Matters</h2>
+  <div class="section-body">
+    <p>
+      Non-linear dynamics appear across many scientific and engineering domains. In climate science,
+      small changes in atmospheric CO₂ concentration trigger non-linear feedback loops: ice-albedo
+      feedback, water vapor amplification, and cloud formation dynamics interact to produce climate
+      sensitivity that no linear model can predict. Lorenz’s foundational work on deterministic
+      chaos showed that even simple non-linear atmospheric models exhibit sensitive dependence on
+      initial conditions — the “butterfly effect”
+      <span><a href="#ref-1" class="cite-link">[1]</a></span
+      >.
+    </p>
+    <p>
+      In biology, gene regulatory networks are inherently non-linear: transcription factors activate
+      or repress genes in switch-like, sigmoidal patterns that create bistable states, oscillations,
+      and emergent behavior that linear differential equations cannot capture
+      <span><a href="#ref-2" class="cite-link">[2]</a></span
+      >. Epidemiological models exhibit non-linear transmission dynamics where the effective
+      reproduction number depends on population immunity, behavioral changes, and network structure
+      simultaneously. Materials science contends with non-linear stress-strain relationships, phase
+      transitions, and turbulence in fluid dynamics — problems where classical simulation requires
+      exponentially fine discretization to capture the relevant physics
+      <span><a href="#ref-3" class="cite-link">[3]</a></span
+      >.
+    </p>
+    <p>
+      In finance, non-linearity manifests through convexity in bond pricing, threshold effects in
+      credit default, and regime-switching dynamics where correlations between assets change
+      discontinuously during crises. During the 2008 financial crisis, the Gaussian copula model
+      assumed linear correlations between mortgage default rates; when defaults correlated
+      non-linearly across regions, losses cascaded through the entire securitization structure
+      <span
+        ><a href="#ref-4" class="cite-link">[4]</a>,
+        <a href="#ref-5" class="cite-link">[5]</a></span
+      >.
+    </p>
+    <p>
+      Across all these domains, the pattern is the same: models that assume linearity fail precisely
+      when accuracy matters most — during phase transitions, cascading failures, and regime changes.
+    </p>
+    <figure
+      style="
+        margin: var(--spacing-lg) 0;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      "
+    >
+      <img
+        src="/nonlinear-market-dynamics-2.webp"
+        alt="Two-panel diagram showing normal conditions with linear predictability versus stressed coupling with non-linear amplification, collapse, and cross-sector contagion"
+        style="width: 100%; display: block"
+        width="1376"
+        height="768"
+        loading="lazy"
+        decoding="async"
+      />
+      <figcaption
+        style="
+          font-size: 0.8125rem;
+          color: var(--color-text-secondary);
+          padding: var(--spacing-sm) var(--spacing-md);
+          background: var(--color-card);
+        "
+      >
+        This figure uses financial markets as one illustration of non-linear dynamics. Top: signals
+        combine linearly with predictable outcomes. Bottom: a small perturbation triggers
+        constructive and destructive interference across coupled subsystems — a pattern common to
+        climate, biological, and financial systems alike.
+      </figcaption>
+    </figure>
+  </div>
+  <section
+    class="interactive-demo"
+    data-demo="nonlinear"
+    aria-label="Coupled waveform visualization"
+  >
+    <noscript
+      >Enable JavaScript to use this visualization. The article and references are available on this
+      page.</noscript
+    >
+    <div class="viz-controls-slot">
+      <div>
+        <div
+          class="viz-controls"
+          style="
+            border-bottom-left-radius: 0px;
+            border-bottom-right-radius: 0px;
+            margin-bottom: 0px;
+            gap: var(--spacing-sm);
+          "
+        >
+          <span
+            style="
+              font-size: 0.75rem;
+              font-weight: 600;
+              color: var(--color-text-secondary);
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              white-space: nowrap;
+            "
+            >Scenarios</span
+          ><button
+            class="btn btn-secondary"
+            style="font-size: 0.75rem; padding: 4px 10px"
+            disabled=""
+          >
+            Predictable</button
+          ><button
+            class="btn btn-secondary"
+            style="font-size: 0.75rem; padding: 4px 10px"
+            disabled=""
+          >
+            Amplification</button
+          ><button
+            class="btn btn-secondary"
+            style="font-size: 0.75rem; padding: 4px 10px"
+            disabled=""
+          >
+            Destruction</button
+          ><button
+            class="btn btn-secondary"
+            style="font-size: 0.75rem; padding: 4px 10px"
+            disabled=""
+          >
+            Volatility
+          </button>
+        </div>
+        <div
+          class="viz-controls"
+          style="border-radius: 0px; margin: 0px; border-top: 1px solid var(--color-border)"
+        >
+          <div class="control-group">
+            <label>A → B coupling</label
+            ><input type="range" value="0" min="0" max="100" disabled="" /><span
+              class="control-value"
+              >0%</span
+            >
+          </div>
+          <div class="control-group">
+            <label>B → A coupling</label
+            ><input type="range" value="0" min="0" max="100" disabled="" /><span
+              class="control-value"
+              >0%</span
+            >
+          </div>
+          <div class="control-group">
+            <label>Global perturbation</label
+            ><input type="range" value="0" min="-50" max="50" disabled="" /><span
+              class="control-value"
+              >0%</span
+            >
+          </div>
+          <div class="control-group">
+            <label>Phase offset B</label
+            ><input type="range" value="90" min="0" max="360" disabled="" /><span
+              class="control-value"
+              >90°</span
+            >
+          </div>
+          <div class="control-group">
+            <label>Model update frequency</label
+            ><input type="range" value="1" min="0" max="5" disabled="" /><span class="control-value"
+              >1 hour</span
+            >
+          </div>
+        </div>
+        <div
+          class="viz-controls"
+          style="
+            margin-top: 0px;
+            border-top: 1px solid var(--color-border);
+            border-top-left-radius: 0px;
+            border-top-right-radius: 0px;
+          "
+        >
+          <div class="control-group">
+            <label
+              ><span
+                style="
+                  display: inline-block;
+                  width: 10px;
+                  height: 10px;
+                  border-radius: 2px;
+                  margin-right: 6px;
+                  vertical-align: middle;
+                  background: rgb(50, 102, 173);
+                "
+              ></span
+              >Waveform A</label
+            ><input type="range" value="0" min="-80" max="80" disabled="" /><span
+              class="control-value"
+              >0%</span
+            >
+          </div>
+          <div class="control-group">
+            <label
+              ><span
+                style="
+                  display: inline-block;
+                  width: 10px;
+                  height: 10px;
+                  border-radius: 2px;
+                  margin-right: 6px;
+                  vertical-align: middle;
+                  background: rgb(216, 90, 48);
+                "
+              ></span
+              >Waveform B</label
+            ><input type="range" value="0" min="-80" max="80" disabled="" /><span
+              class="control-value"
+              >0%</span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+    <h3
+      style="
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        margin-bottom: var(--spacing-sm);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      "
+    >
+      Unmodified Input (no coupling)
+    </h3>
+    <div class="viz-container"></div>
+    <h3
+      style="
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        margin-bottom: var(--spacing-sm);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: var(--spacing-lg);
+      "
+    >
+      Coupled Output
+    </h3>
+    <p
+      style="
+        font-size: 0.8125rem;
+        color: var(--color-text-secondary);
+        margin-bottom: var(--spacing-sm);
+        line-height: 1.5;
+      "
+    >
+      Dashed lines show a sinusoidal prediction model trained on sampled data from the live signal.
+      The model collects samples each frame and retrains at the configured interval. Between
+      retrains, it extrapolates from stale coefficients — the prediction drifts as the actual signal
+      evolves. Under predictable conditions the model converges quickly. With coupling, the signal
+      contains non-linear components that the single-frequency model cannot capture.
+    </p>
+    <div class="viz-container"></div>
+    <h3
+      style="
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        margin-bottom: var(--spacing-sm);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: var(--spacing-lg);
+      "
+    >
+      Aggregate
+    </h3>
+    <div class="viz-container"></div>
+  </section>
+  <h2 class="section-title">The Computational Cost of Non-Linearity</h2>
+  <div class="section-body">
+    <p>
+      When N variables interact non-linearly, the state space of possible configurations grows as
+      O(2ⁿ) for binary-state models or worse for continuous variables. A system of 50 coupled
+      variables with pairwise non-linear interactions requires evaluating correlations across
+      roughly 10¹⁵ states. Classical Monte Carlo methods sample this space randomly, but convergence
+      slows dramatically when the distribution has fat tails or multimodal structure — exactly the
+      conditions that prevail in non-linear systems under stress.
+    </p>
+    <p>
+      Many optimization problems with non-linear constraints are NP-hard. Orús, Mugel, and Lizaso
+      proved that forecasting financial crashes by computing equilibrium states of financial
+      networks is formally NP-hard and mapped it to a spin-1/2 quantum Hamiltonian
+      <span><a href="#ref-6" class="cite-link">[6]</a></span
+      >. This result generalizes: finding equilibria in any network of non-linearly coupled agents
+      shares the same computational structure, whether the agents are financial institutions,
+      neurons, or atmospheric cells.
+    </p>
+    <p>
+      Quantum computers address this through two mechanisms. Superposition allows N qubits to
+      represent all 2ⁿ states simultaneously, enabling parallel evaluation of the entire interaction
+      space. Entanglement creates correlations between qubits that mirror non-linear coupling
+      between variables, allowing the quantum system to model coupled dynamics natively rather than
+      through exponentially many classical simulations. Farhi et al.
+      <span><a href="#ref-7" class="cite-link">[7]</a></span> and Kadowaki and Nishimori
+      <span><a href="#ref-8" class="cite-link">[8]</a></span> propose that algorithms like QAOA and
+      quantum annealing exploit this structure to find good approximate solutions faster than
+      classical heuristics for structured instances.
+    </p>
+  </div>
+  <div class="citations">
+    <h3>References</h3>
+    <ol>
+      <li id="ref-1">
+        Lorenz, E.N. (1963). Deterministic nonperiodic flow. Journal of the Atmospheric Sciences,
+        20(2), 130–141.
+        <a
+          href="https://doi.org/10.1175/1520-0469(1963)020&lt;0130:DNF&gt;2.0.CO;2"
+          target="_blank"
+          rel="noopener noreferrer"
+          >https://doi.org/10.1175/1520-0469(1963)020&lt;0130:DNF&gt;2.0.CO;2</a
+        >
+      </li>
+      <li id="ref-2">
+        Alon, U. (2007). An Introduction to Systems Biology: Design Principles of Biological
+        Circuits. Chapman &amp; Hall/CRC.
+        <a href="https://doi.org/10.1201/9781420011432" target="_blank" rel="noopener noreferrer"
+          >https://doi.org/10.1201/9781420011432</a
+        >
+      </li>
+      <li id="ref-3">
+        Feynman, R. (1982). Simulating physics with computers. International Journal of Theoretical
+        Physics, 21(6/7), 467–488.
+        <a href="https://doi.org/10.1007/BF02650179" target="_blank" rel="noopener noreferrer"
+          >https://doi.org/10.1007/BF02650179</a
+        >
+      </li>
+      <li id="ref-4">
+        Li, D.X. (2000). On Default Correlation: A Copula Function Approach. Journal of Fixed
+        Income, 9(4), 43–54.
+        <a href="https://doi.org/10.3905/jfi.2000.319253" target="_blank" rel="noopener noreferrer"
+          >https://doi.org/10.3905/jfi.2000.319253</a
+        >
+      </li>
+      <li id="ref-5">
+        Salmon, F. (2009). Recipe for Disaster: The Formula That Killed Wall Street. Wired.
+        <a href="https://www.wired.com/2009/02/wp-quant/" target="_blank" rel="noopener noreferrer"
+          >https://www.wired.com/2009/02/wp-quant/</a
+        >
+      </li>
+      <li id="ref-6">
+        Orús, R., Mugel, S., &amp; Lizaso, E. (2019). Forecasting financial crashes with quantum
+        computing. Physical Review A, 99, 060301(R).
+        <a href="https://arxiv.org/abs/1810.07690" target="_blank" rel="noopener noreferrer"
+          >https://arxiv.org/abs/1810.07690</a
+        >
+      </li>
+      <li id="ref-7">
+        Farhi, E., Goldstone, J., &amp; Gutmann, S. (2014). A Quantum Approximate Optimization
+        Algorithm.
+        <a href="https://arxiv.org/abs/1411.4028" target="_blank" rel="noopener noreferrer"
+          >https://arxiv.org/abs/1411.4028</a
+        >
+      </li>
+      <li id="ref-8">
+        Kadowaki, T. &amp; Nishimori, H. (1998). Quantum annealing in the transverse Ising model.
+        Physical Review E, 58(5), 5355.
+        <a href="https://doi.org/10.1103/PhysRevE.58.5355" target="_blank" rel="noopener noreferrer"
+          >https://doi.org/10.1103/PhysRevE.58.5355</a
+        >
+      </li>
+    </ol>
+  </div>
+</div>

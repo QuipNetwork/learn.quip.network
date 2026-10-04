@@ -1,0 +1,210 @@
+<div class="correlations-page">
+  <div>
+    <h1 class="page-title">Indirect and Hidden Correlations in Complex Networks</h1>
+    <p class="page-subtitle">
+      How influence propagates through intermediaries, and why linear models miss it
+    </p>
+    <div class="section-body">
+      <p>
+        A hidden or indirect correlation exists when two variables that appear uncorrelated connect
+        through one or more intermediary nodes. Classical correlation analysis measures pairwise
+        linear association and misses these entirely
+        <span
+          ><a href="#ref-1" class="cite-link">[1]</a>,
+          <a href="#ref-2" class="cite-link">[2]</a></span
+        >. Even multivariate methods like principal component analysis capture only linear
+        projections of the data, not the non-linear pathways through which influence actually
+        propagates.
+      </p>
+      <p>
+        Complex networks are dense with these indirect dependencies. In epidemiology, individuals
+        with no direct contact can transmit disease through chains of intermediaries, making contact
+        tracing through pairwise analysis insufficient. In supply chains, a component shortage at
+        one manufacturer propagates through distributors and integrators to affect companies with no
+        direct supplier relationship. In finance, the 2008 crisis demonstrated this: mortgage
+        defaults in Nevada propagated through securitization vehicles to affect pension funds in
+        Norway with no direct exposure to Nevada housing
+        <span
+          ><a href="#ref-3" class="cite-link">[3]</a>, <a href="#ref-4" class="cite-link">[4]</a>,
+          <a href="#ref-5" class="cite-link">[5]</a></span
+        >.
+      </p>
+    </div>
+  </div>
+  <div>
+    <h2 class="section-title">What Are Indirect Correlations?</h2>
+    <div class="section-body">
+      <p>
+        A direct correlation between two variables A and B means their values move together: when A
+        increases, B tends to increase (or decrease) proportionally. An indirect correlation means A
+        and B connect only through a chain of intermediaries A → C₁ → C₂ → … → B. The pairwise
+        Pearson correlation between A and B may be near zero, yet a shock to A reliably propagates
+        to B through the chain. Correlation matrices that rely on historical observations routinely
+        underestimate systemic risk in networks
+        <span
+          ><a href="#ref-2" class="cite-link">[2]</a>,
+          <a href="#ref-3" class="cite-link">[3]</a></span
+        >.
+      </p>
+      <p>
+        The combinatorial challenge is severe. For N nodes, pairwise correlation requires checking
+        O(N²) pairs. But indirect paths of length k require checking O(Nᵏ) possible chains. A
+        network of 1,000 nodes — whether financial institutions, species in an ecosystem, or
+        computing nodes in a distributed system — has about 500,000 pairwise relationships but
+        roughly 10¹ paths of length 3. This exponential blowup is why classical methods either
+        ignore indirect correlations or approximate them coarsely.
+      </p>
+      <p>
+        Each hop in the chain can introduce non-linearity. A 5% drop in NVIDIA revenue might cause a
+        2% reduction in cloud capacity, which triggers a 10% spike in spot pricing, which forces
+        enterprise budget cuts of 15%. The relationship between NVIDIA’s revenue and enterprise IT
+        budgets is real but non-linear at every step. No single correlation coefficient captures it.
+      </p>
+    </div>
+  </div>
+  <div>
+    <h2 class="section-title">The GPU Supply Chain</h2>
+    <div class="section-body">
+      <p>
+        The visualization below maps one such indirect dependency chain. NVIDIA sits at the center
+        as a dominant supplier of high-end AI training GPUs. It sells to AI labs (OpenAI, Anthropic,
+        xAI), which consume compute through cloud providers (Azure, GCP, AWS, Oracle Cloud), which
+        serve enterprises, which bank with financial institutions. A disruption at NVIDIA—a fab
+        delay, an export restriction, a product recall—propagates outward through four hops to reach
+        banks that have zero direct business relationship with NVIDIA. The same pattern applies to
+        any tiered network: semiconductor supply disruptions affecting healthcare equipment
+        availability, or agricultural shortages reaching consumer goods through processing and
+        distribution intermediaries.
+      </p>
+      <p>
+        Click “Propagate perturbation” to watch a shock cascade through the network. Notice that
+        every bank is reachable, yet none has a direct edge to NVIDIA. Any network analysis that
+        examines only direct connections would assign near-zero correlation between NVIDIA and
+        organizations at the network periphery — whether those are banks, hospitals dependent on
+        cloud infrastructure, or research institutions relying on GPU compute — until the shock
+        actually arrives.
+      </p>
+    </div>
+  </div>
+  <section
+    class="interactive-demo"
+    data-demo="hidden-correlations"
+    aria-label="Network propagation visualization"
+  >
+    <noscript
+      >Enable JavaScript to use this visualization. The article and references are available on this
+      page.</noscript
+    >
+    <div class="viz-controls-slot">
+      <div class="viz-controls">
+        <button class="btn btn-primary" disabled="">Propagate perturbation</button
+        ><button class="btn btn-secondary" disabled="">Reset</button>
+      </div>
+    </div>
+    <div class="viz-container"></div>
+  </section>
+  <div>
+    <h2 class="section-title">How Quantum Systems Model Network Propagation</h2>
+    <div class="section-body">
+      <p>
+        Neutral-atom quantum processors offer a natural substrate for modeling network propagation
+        <span
+          ><a href="#ref-6" class="cite-link">[6]</a>,
+          <a href="#ref-8" class="cite-link">[8]</a></span
+        >. Atoms can be arranged in arbitrary 2D and 3D geometries that mirror the topology of a
+        complex network. Each atom represents a node; the Rydberg interaction between nearby atoms
+        encodes the connection strength between nodes. Because the Rydberg interaction falls off as
+        1/r⁶, distant atoms interact weakly—just as distant nodes in a network have attenuated
+        influence—but the interaction is still non-zero, capturing the indirect correlations that
+        classical models discard.
+      </p>
+      <p>
+        When researchers apply a perturbation to one atom (analogous to a disruption at a network
+        node), it propagates through the array via many-body quantum dynamics. The system naturally
+        explores all propagation paths simultaneously, including paths of length 3, 4, and beyond
+        that would require exponential classical computation to enumerate. Measuring the final state
+        of distant atoms reveals the aggregate indirect correlation, including non-linear
+        amplification and dampening effects at each hop.
+      </p>
+      <p>
+        Proof-of-concept experiments on QuEra’s 256-atom Aquila processor demonstrate that
+        neutral-atom systems can encode graph structures with up to 256 nodes and simulate
+        propagation dynamics in microseconds <span><a href="#ref-6" class="cite-link">[6]</a></span
+        >. As atom counts scale toward 1,000+ and gate fidelities improve, researchers expect these
+        systems to deliver quantitative advantages for correlation discovery in systems too large
+        for classical brute-force analysis — whether financial portfolios
+        <span><a href="#ref-7" class="cite-link">[7]</a></span
+        >, epidemiological contact networks, or industrial supply chains.
+      </p>
+    </div>
+  </div>
+  <div class="citations">
+    <h3>References</h3>
+    <ol>
+      <li id="ref-1">
+        Mantegna, R. N. &amp; Stanley, H. E. (2000). An Introduction to Econophysics: Correlations
+        and Complexity in Finance. Cambridge University Press.
+        <a href="https://doi.org/10.1017/CBO9780511755767" target="_blank" rel="noopener noreferrer"
+          >https://doi.org/10.1017/CBO9780511755767</a
+        >
+      </li>
+      <li id="ref-2">
+        Kenett, D. Y. et al. (2010). Dominating clasp of the financial sector revealed by partial
+        correlation analysis of the stock market. PLoS ONE, 5(12), e15032.
+        <a
+          href="https://doi.org/10.1371/journal.pone.0015032"
+          target="_blank"
+          rel="noopener noreferrer"
+          >https://doi.org/10.1371/journal.pone.0015032</a
+        >
+      </li>
+      <li id="ref-3">
+        Billio, M. et al. (2012). Econometric measures of connectedness and systemic risk in the
+        finance and insurance sectors. Journal of Financial Economics, 104(3), 535–559.
+        <a
+          href="https://doi.org/10.1016/j.jfineco.2011.12.010"
+          target="_blank"
+          rel="noopener noreferrer"
+          >https://doi.org/10.1016/j.jfineco.2011.12.010</a
+        >
+      </li>
+      <li id="ref-4">
+        Acemoglu, D. et al. (2015). Systemic risk and stability in financial networks. American
+        Economic Review, 105(2), 564–608.
+        <a href="https://doi.org/10.1257/aer.20130456" target="_blank" rel="noopener noreferrer"
+          >https://doi.org/10.1257/aer.20130456</a
+        >
+      </li>
+      <li id="ref-5">
+        Battiston, S. et al. (2016). The price of complexity in financial networks. Proceedings of
+        the National Academy of Sciences, 113(36), 10031–10036.
+        <a href="https://doi.org/10.1073/pnas.1521573113" target="_blank" rel="noopener noreferrer"
+          >https://doi.org/10.1073/pnas.1521573113</a
+        >
+      </li>
+      <li id="ref-6">
+        Wurtz, J. et al. (2022). Industry applications of neutral-atom quantum computing solving
+        independent set problems. arXiv:2205.08500.
+        <a href="https://arxiv.org/abs/2205.08500" target="_blank" rel="noopener noreferrer"
+          >https://arxiv.org/abs/2205.08500</a
+        >
+      </li>
+      <li id="ref-7">
+        Herman, D. et al. (2023). Quantum computing for finance. Nature Reviews Physics, 5, 450–465.
+        <a href="https://arxiv.org/abs/2201.02773" target="_blank" rel="noopener noreferrer"
+          >https://arxiv.org/abs/2201.02773</a
+        >
+      </li>
+      <li id="ref-8">
+        Bluvstein, D. et al. (2024). Logical quantum processor based on reconfigurable atom arrays.
+        Nature, 626, 58–65.
+        <a
+          href="https://doi.org/10.1038/s41586-023-06927-3"
+          target="_blank"
+          rel="noopener noreferrer"
+          >https://doi.org/10.1038/s41586-023-06927-3</a
+        >
+      </li>
+    </ol>
+  </div>
+</div>
