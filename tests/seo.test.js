@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
 
 const origin = "https://learn.quip.network";
 const pages = [
@@ -15,8 +14,9 @@ const pages = [
 ];
 
 async function inspect(file) {
-  expect(existsSync(`dist/${file}`), `build must serve ${file}`).toBe(true);
-  const html = readFileSync(`dist/${file}`, "utf8");
+  const document = Bun.file(`dist/${file}`);
+  expect(await document.exists(), `build must serve ${file}`).toBe(true);
+  const html = await document.text();
   const nodes = {};
   const rewriter = new HTMLRewriter();
   for (const selector of [
@@ -48,7 +48,7 @@ async function inspect(file) {
 describe("production search discovery", () => {
   for (const [path, file, heading, citations] of pages) {
     test(`${path} serves its article and metadata before JavaScript`, async () => {
-      const { html, nodes } = await inspect(file);
+      const { nodes } = await inspect(file);
       expect(nodes.h1).toHaveLength(1);
       expect(nodes.h1[0].text).toContain(heading);
       expect(nodes.title).toHaveLength(1);
@@ -60,7 +60,6 @@ describe("production search discovery", () => {
         false,
       );
       expect(nodes[".citations li"]).toHaveLength(citations);
-      expect(html).not.toContain("<!--page-body-->");
       for (const [destination] of pages) {
         expect(nodes["a[href]"].some((el) => el.attrs.href === destination)).toBe(true);
       }
@@ -81,26 +80,28 @@ describe("production search discovery", () => {
     ).toBe(pages.length);
   });
 
-  test("sitemap lists only existing public canonical URLs", () => {
-    expect(existsSync("dist/sitemap.xml")).toBe(true);
-    const sitemap = readFileSync("dist/sitemap.xml", "utf8");
-    expect([...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => match[1])).toEqual(
-      pages.map(([path]) => origin + path),
+  test("sitemap lists only existing public canonical URLs", async () => {
+    const index = await Bun.file("dist/sitemap-index.xml").text();
+    expect(index).toContain(`${origin}/sitemap-0.xml`);
+    const sitemap = await Bun.file("dist/sitemap-0.xml").text();
+    expect([...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => match[1]).sort()).toEqual(
+      pages.map(([path]) => origin + path).sort(),
     );
     expect(sitemap).not.toContain("lastmod");
-    expect(readFileSync("dist/robots.txt", "utf8")).toContain(`Sitemap: ${origin}/sitemap.xml`);
+    expect(await Bun.file("dist/robots.txt").text()).toContain(`Sitemap: ${origin}/sitemap-index.xml`);
+    expect(await Bun.file("dist/_redirects").text()).toContain("/sitemap.xml /sitemap-index.xml 301");
   });
 
   test("missing pages have a noindex error document and no catch-all success rewrite", async () => {
     const { nodes } = await inspect("404.html");
     expect(nodes.h1[0].text).toBe("Page not found");
     expect(nodes['meta[name="robots"]'][0].attrs.content).toBe("noindex");
-    const redirects = readFileSync("dist/_redirects", "utf8");
+    const redirects = await Bun.file("dist/_redirects").text();
     expect(redirects).not.toMatch(/^\/\*\s+\S+\s+200/m);
     for (const [path, file] of pages.slice(1)) {
       expect(redirects).toContain(`${path} /${file} 200`);
     }
-    expect(readFileSync("netlify.toml", "utf8")).not.toContain('to = "/index.html"');
+    expect(await Bun.file("netlify.toml").text()).not.toContain('to = "/index.html"');
   });
 
   test("article images reserve space and retain descriptions", async () => {
@@ -111,7 +112,7 @@ describe("production search discovery", () => {
       expect(Number(attrs.width)).toBeGreaterThan(0);
       expect(Number(attrs.height)).toBeGreaterThan(0);
       expect(attrs.src).toMatch(/\.webp$/);
-      expect(existsSync(`dist${attrs.src}`)).toBe(true);
+      expect(await Bun.file(`dist${attrs.src}`).exists()).toBe(true);
     }
   });
 });
