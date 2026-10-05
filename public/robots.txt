@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://learn.quip.network/sitemap.xml
+Sitemap: https://learn.quip.network/sitemap-index.xml
