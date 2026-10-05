@@ -3,7 +3,6 @@ export const siteUrl = "https://learn.quip.network";
 export interface Page {
   path: string;
   file: string;
-  content: string;
   label: string;
   title: string;
   description: string;
@@ -14,7 +13,6 @@ export const pages: Page[] = [
   {
     path: "/",
     file: "index.html",
-    content: "home",
     label: "Home",
     title: "Quantum Computing for Complex Systems | QUIP",
     description:
@@ -23,7 +21,6 @@ export const pages: Page[] = [
   {
     path: "/nonlinear",
     file: "nonlinear.html",
-    content: "nonlinear",
     label: "Non-Linear Relationships",
     title: "Non-Linear Relationships in Complex Systems | QUIP",
     description:
@@ -32,7 +29,6 @@ export const pages: Page[] = [
   {
     path: "/hidden-correlations",
     file: "hidden-correlations.html",
-    content: "hidden-correlations",
     label: "Hidden Correlations",
     title: "Hidden Correlations in Complex Networks | QUIP",
     description:
@@ -41,7 +37,6 @@ export const pages: Page[] = [
   {
     path: "/quantum-tunneling",
     file: "quantum-tunneling.html",
-    content: "quantum-tunneling",
     label: "Quantum Tunneling",
     title: "Quantum Tunneling Through Optimization Barriers | QUIP",
     description:
@@ -52,7 +47,6 @@ export const pages: Page[] = [
 export const notFound: Page = {
   path: "/404.html",
   file: "404.html",
-  content: "404",
   label: "Page not found",
   title: "Page Not Found | QUIP",
   description:

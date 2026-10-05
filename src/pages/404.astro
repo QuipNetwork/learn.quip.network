@@ -1,0 +1,15 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import { notFound } from "../site";
+---
+
+<PageLayout page={notFound}>
+<div class="error-page">
+  <h1 class="page-title">Page not found</h1>
+  <p>The page you requested does not exist.</p>
+  <p>
+    <a href="/">Return to the QUIP Research home page</a> to explore quantum computing for
+    complex systems.
+  </p>
+</div>
+</PageLayout>

@@ -1,3 +1,9 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import { getPage } from "../site";
+---
+
+<PageLayout page={getPage("/hidden-correlations")}>
 <div class="correlations-page">
   <div>
     <h1 class="page-title">Indirect and Hidden Correlations in Complex Networks</h1>
@@ -208,3 +214,9 @@
     </ol>
   </div>
 </div>
+</PageLayout>
+
+<script>
+  import { mountHiddenCorrelations } from "../demos/hidden-correlations";
+  mountHiddenCorrelations(document.getElementById("page-content")!);
+</script>

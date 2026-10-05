@@ -1,3 +1,9 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import { getPage } from "../site";
+---
+
+<PageLayout page={getPage("/")}>
 <div class="home-page">
   <h1 class="page-title">Quantum Computing for Complex Systems</h1>
   <p class="page-subtitle">
@@ -20,7 +26,7 @@
     </p>
   </div>
   <div class="card-grid">
-    <a href="/nonlinear" data-link="" class="card" style="border-top-color: var(--color-primary)">
+    <a href="/nonlinear" class="card" style="border-top-color: var(--color-primary)">
       <h2>Non-Linear Relationships</h2>
       <p>
         Why linear models break down in coupled systems — from climate tipping points to biological
@@ -29,7 +35,7 @@
       <span class="card-arrow" style="color: var(--color-primary)">→</span></a
     ><a
       href="/hidden-correlations"
-      data-link=""
+
       class="card"
       style="border-top-color: var(--color-teal)"
     >
@@ -41,7 +47,7 @@
       <span class="card-arrow" style="color: var(--color-teal)">→</span></a
     ><a
       href="/quantum-tunneling"
-      data-link=""
+
       class="card"
       style="border-top-color: var(--color-coral)"
     >
@@ -51,3 +57,4 @@
     >
   </div>
 </div>
+</PageLayout>

@@ -1,0 +1,92 @@
+---
+import { siteUrl } from "../site";
+import type { Page } from "../site";
+import "../styles/variables.css";
+import "../styles/reset.css";
+import "../styles/layout.css";
+import "../styles/typography.css";
+import "../styles/controls.css";
+import "../styles/visualization.css";
+
+interface Props {
+  page: Page;
+}
+
+const { page } = Astro.props;
+const canonical = new URL(page.path, siteUrl).href;
+const structuredData = page.path === "/"
+  ? {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "QUIP Research",
+      url: canonical,
+    }
+  : {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: new URL("/", siteUrl).href },
+        { "@type": "ListItem", position: 2, name: page.label, item: canonical },
+      ],
+    };
+const navigation = [
+  { path: "/nonlinear", label: "Non-Linear", footerLabel: "Non-Linear" },
+  { path: "/hidden-correlations", label: "Hidden Correlations", footerLabel: "Correlations" },
+  { path: "/quantum-tunneling", label: "Quantum Tunneling", footerLabel: "Tunneling" },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{page.title}</title>
+    <meta name="description" content={page.description} />
+    <link rel="canonical" href={canonical} />
+    {page.noindex ? (
+      <meta name="robots" content="noindex" />
+    ) : (
+      <script type="application/ld+json" set:html={JSON.stringify(structuredData).replaceAll("<", "\\u003c")} />
+    )}
+  </head>
+  <body>
+    <div id="app">
+      <header class="site-header">
+        <div class="site-header-inner">
+          <a href="/" class="site-logo">QUIP Research</a>
+          <nav class="site-nav" aria-label="Main navigation">
+            {navigation.map((link) => (
+              <a href={link.path} class:list={{ active: page.path === link.path }} aria-current={page.path === link.path ? "page" : undefined}>
+                {link.label}
+              </a>
+            ))}
+            <button class="theme-toggle" aria-label="Toggle dark mode" hidden>🌙</button>
+          </nav>
+        </div>
+      </header>
+      <main id="page-content">
+        {page.path !== "/" && !page.noindex && (
+          <nav class="breadcrumbs" aria-label="Breadcrumb">
+            <ol>
+              <li><a href="/">Home</a></li>
+              <li aria-current="page">{page.label}</li>
+            </ol>
+          </nav>
+        )}
+        <slot />
+      </main>
+      <footer class="site-footer">
+        <div class="site-footer-inner">
+          <span>© {new Date().getFullYear()} QUIP Network</span>
+          <div class="footer-links">
+            {navigation.map((link) => <a href={link.path}>{link.footerLabel}</a>)}
+          </div>
+        </div>
+      </footer>
+    </div>
+    <script>
+      import "../main";
+    </script>
+  </body>
+</html>

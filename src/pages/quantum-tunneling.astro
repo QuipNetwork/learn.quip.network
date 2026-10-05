@@ -1,3 +1,9 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import { getPage } from "../site";
+---
+
+<PageLayout page={getPage("/quantum-tunneling")}>
 <div class="tunneling-page">
   <h1 class="page-title">Quantum Tunneling Through Optimization Barriers</h1>
   <p class="page-subtitle">How quantum systems escape local minima that trap classical solvers</p>
@@ -299,3 +305,9 @@
     </ol>
   </div>
 </div>
+</PageLayout>
+
+<script>
+  import { mountQuantumTunneling } from "../demos/quantum-tunneling";
+  mountQuantumTunneling(document.getElementById("page-content")!);
+</script>

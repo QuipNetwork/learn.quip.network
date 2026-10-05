@@ -1,12 +1,8 @@
-import content from "./content.html?raw";
 import { EDGES } from "./data";
 import { createNetworkSVG } from "./NetworkGraph";
 import { PropagationAnimator } from "./Propagation";
 
 export function mountHiddenCorrelations(container: HTMLElement): () => void {
-  if (!container.querySelector(".correlations-page")) {
-    container.insertAdjacentHTML("beforeend", content);
-  }
   const demo = container.querySelector<HTMLElement>('[data-demo="hidden-correlations"]')!;
   const vizContainer = demo.querySelector<HTMLElement>(".viz-container")!;
 
